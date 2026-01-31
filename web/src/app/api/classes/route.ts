@@ -15,7 +15,7 @@ export async function GET() {
         });
 
         // Transform to match UI needs if necessary
-        const formattedClasses = classes.map(cls => ({
+        const formattedClasses = classes.map((cls: typeof classes[0]) => ({
             ...cls,
             studentsCount: cls._count.students,
             teacherName: cls.teacher?.name || 'Unassigned',

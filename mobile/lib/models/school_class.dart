@@ -44,4 +44,13 @@ class SchoolClass {
     if (colorStr.contains('pink')) return Colors.pink;
     return Colors.blue;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'grade': grade,
+      'time': time,
+      // 'color': color.toString(), // Simplify for now, backend might expect string
+    };
+  }
 }

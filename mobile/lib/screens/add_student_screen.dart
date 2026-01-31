@@ -95,7 +95,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _grade,
+                      initialValue: _grade,
                       decoration: const InputDecoration(
                           labelText: 'Grade', border: OutlineInputBorder()),
                       items: ['9th', '10th', '11th', '12th']
@@ -108,7 +108,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _classMatch,
+                      initialValue: _classMatch,
                       decoration: const InputDecoration(
                           labelText: 'Class', border: OutlineInputBorder()),
                       items: ['A', 'B', 'C']

@@ -126,4 +126,74 @@ class ApiService {
       throw Exception('Failed to save attendance');
     }
   }
+
+  Future<void> createStudent(Student student) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/students'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(student.toJson()),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to create student: ${response.body}');
+    }
+  }
+
+  Future<void> createTeacher(Teacher teacher) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/teachers'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(teacher.toJson()),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to create teacher: ${response.body}');
+    }
+  }
+
+  Future<void> createClass(SchoolClass cls) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/classes'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(cls.toJson()),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to create class: ${response.body}');
+    }
+  }
+
+  Future<void> payFee(String feeId) async {
+    // Note: requires backend implementation
+    // final response = await http.post...
+  }
+
+  Future<void> markNotificationAsRead(String id) async {
+    // Note: requires backend implementation
+    // final response = await http.post...
+  }
+  Future<List<Message>> getMessages(String userId) async {
+    final response =
+        await http.get(Uri.parse('$baseUrl/api/messages?userId=$userId'));
+    if (response.statusCode == 200) {
+      List<dynamic> body = jsonDecode(response.body);
+      return body.map((dynamic item) => Message.fromJson(item)).toList();
+    } else {
+      print('GET MESSAGES FAILED: ${response.statusCode} - ${response.body}');
+      throw Exception('Failed to load messages: ${response.statusCode}');
+    }
+  }
+
+  Future<void> sendMessage(
+      String senderId, String receiverId, String content) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/messages'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'senderId': senderId,
+        'receiverId': receiverId,
+        'content': content,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to send message: ${response.body}');
+    }
+  }
 }

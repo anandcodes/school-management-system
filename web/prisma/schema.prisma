@@ -5,8 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../node_modules/@prisma/client"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -162,6 +161,15 @@ model Notification {
   title     String
   message   String
   type      String   // info, warning, success
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  senderId  String   // userId
+  receiverId String  // userId
+  content   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 }

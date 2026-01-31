@@ -70,7 +70,7 @@ class _AddClassScreenState extends State<AddClassScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _grade,
+                initialValue: _grade,
                 decoration: const InputDecoration(
                     labelText: 'Grade',
                     border: OutlineInputBorder(),

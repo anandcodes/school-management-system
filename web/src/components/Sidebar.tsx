@@ -11,6 +11,7 @@ import {
     Settings,
     LogOut,
     Bell,
+    MessageSquare,
     CreditCard as Building // Reusing, or import DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ const navigation = [
     { name: "Schedule", href: "/schedule", icon: Calendar },
     { name: "Exams", href: "/exams", icon: GraduationCap },
     { name: "Fees", href: "/fees", icon: Building }, // Using Building as placeholder or dollar sign
+    { name: "Messages", href: "/messages", icon: MessageSquare },
     { name: "Alerts", href: "/notifications", icon: Bell },
     { name: "Settings", href: "/settings", icon: Settings },
 ];
@@ -31,7 +33,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export function Sidebar({ className }: { className?: string }) {
     const pathname = usePathname();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
 
     return (
         <div className={cn("flex h-full w-64 flex-col border-r border-border bg-card text-card-foreground", className)}>
@@ -46,10 +48,10 @@ export function Sidebar({ className }: { className?: string }) {
 
                         // Role based filtering
                         if (user.role === 'teacher') {
-                            return ['Dashboard', 'Classes', 'Schedule', 'Exams', 'Settings', 'Alerts'].includes(item.name);
+                            return ['Dashboard', 'Classes', 'Schedule', 'Exams', 'Messages', 'Settings', 'Alerts'].includes(item.name);
                         }
                         if (user.role === 'student' || user.role === 'parent') {
-                            return ['Dashboard', 'Schedule', 'Exams', 'Fees', 'Alerts', 'Settings'].includes(item.name);
+                            return ['Dashboard', 'Schedule', 'Exams', 'Fees', 'Messages', 'Alerts', 'Settings'].includes(item.name);
                         }
                         return false;
                     }).map((item) => {
@@ -74,7 +76,10 @@ export function Sidebar({ className }: { className?: string }) {
                 </ul>
             </nav>
             <div className="border-t border-border p-4">
-                <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <button
+                    onClick={logout}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
                     <LogOut className="h-5 w-5" />
                     Sign Out
                 </button>

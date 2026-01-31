@@ -27,4 +27,14 @@ class Student {
       avatarUrl: json['avatar'],
     );
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'grade': grade,
+      'email': email,
+      'status': status,
+      'classMatch':
+          classMatch, // Note: Backend expects classId mostly, but for now we send what we have
+    };
+  }
 }

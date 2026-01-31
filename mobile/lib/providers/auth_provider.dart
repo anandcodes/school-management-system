@@ -19,7 +19,7 @@ class AuthProvider extends ChangeNotifier {
 
     if (email == 'admin@school.edu' && password == 'password') {
       _user = User(
-        id: '1',
+        id: 'ADMIN-01',
         name: 'Administrator',
         email: email,
         role: UserRole.admin,
@@ -29,7 +29,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } else if (email == 'teacher@school.edu' && password == 'password') {
       _user = User(
-        id: '2',
+        id: 'TEACHER-01',
         name: 'John Teacher',
         email: email,
         role: UserRole.teacher,
@@ -39,7 +39,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } else if (email == 'student@school.edu' && password == 'password') {
       _user = User(
-        id: '3',
+        id: 'ST-001',
         name: 'Alice Student',
         email: email,
         role: UserRole.student,
@@ -49,7 +49,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } else if (email == 'parent@school.edu' && password == 'password') {
       _user = User(
-        id: '4',
+        id: 'P-001',
         name: 'Bob Parent',
         email: email,
         role: UserRole.parent,

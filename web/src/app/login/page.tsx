@@ -10,8 +10,8 @@ export default function LoginPage() {
     const { login } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [email, setEmail] = useState("admin@school.edu");
-    const [password, setPassword] = useState("password");
+    const [email, setEmail] = useState("admin@school.com");
+    const [password, setPassword] = useState("admin");
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -20,7 +20,7 @@ export default function LoginPage() {
         try {
             await login(email, password);
         } catch (err) {
-            setError("Invalid credentials. Use admin@school.edu / password");
+            setError("Invalid credentials. Use admin@school.com / admin");
             setLoading(false);
         }
     };
@@ -68,7 +68,7 @@ export default function LoginPage() {
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="admin@school.edu"
+                                        placeholder="admin@school.com"
                                         className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                         required
                                     />

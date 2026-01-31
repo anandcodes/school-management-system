@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class MockAuthService {
   Future<bool> login(String email, String password) async {
     // Simulate network delay

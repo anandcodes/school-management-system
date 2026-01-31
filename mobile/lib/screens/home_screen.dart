@@ -5,6 +5,7 @@ import 'package:school_management_mobile/screens/schedule_screen.dart';
 import 'package:school_management_mobile/screens/settings_screen.dart';
 import 'package:school_management_mobile/screens/students_screen.dart';
 import 'package:school_management_mobile/screens/teachers_screen.dart';
+import 'package:school_management_mobile/screens/chat_screen.dart';
 
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -89,14 +90,23 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    // Everyone sees Settings
-    screens.add(const SettingsScreen());
-    navItems.add(
+    // Everyone sees Chat and Settings
+    screens.addAll([
+      const ChatScreen(),
+      const SettingsScreen(),
+    ]);
+
+    navItems.addAll([
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.chat_bubble_outline),
+        activeIcon: Icon(Icons.chat_bubble),
+        label: 'Chat',
+      ),
       const BottomNavigationBarItem(
           icon: Icon(Icons.settings_outlined),
           activeIcon: Icon(Icons.settings),
           label: 'Settings'),
-    );
+    ]);
 
     return Scaffold(
       body: SafeArea(

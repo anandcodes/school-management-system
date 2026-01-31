@@ -93,7 +93,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       Text("Date: ${DateTime.now().toString().split(' ')[0]}",
                           style: TextStyle(color: Colors.grey.shade600)),
                       Text("${_students.length} Students",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),

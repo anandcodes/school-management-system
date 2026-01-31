@@ -4,7 +4,6 @@ import '../models/teacher.dart';
 import '../models/school_class.dart';
 import '../models/schedule_event.dart';
 import '../models/new_models.dart';
-import 'package:flutter/material.dart';
 import 'api_service.dart';
 
 class DataService {
@@ -17,8 +16,8 @@ class DataService {
   DataService._internal() {
     // TODO: REPLACE THIS URL with your actual Vercel Deployment URL for the live app
     // Example: "https://school-management-system-ten.vercel.app"
-    // For Android Emulator (Local): "http://10.0.2.2:3000"
-    const String baseUrl = "https://school-management-system.vercel.app";
+    // For Android Emulator (Local): "http://10.0.2.2:3000" or your LAN IP "http://192.168.1.4:3000"
+    const String baseUrl = "http://192.168.1.4:3000"; // Local testing
     _apiService = ApiService(baseUrl: baseUrl);
   }
 
@@ -37,9 +36,13 @@ class DataService {
     }
   }
 
-  void addStudent(Student student) {
-    // TODO: Implement API POST
-    _students.add(student);
+  Future<void> addStudent(Student student) async {
+    try {
+      await _apiService.createStudent(student);
+      _students.add(student); // Optimistic update or refresh
+    } catch (e) {
+      print("Error adding student: $e");
+    }
   }
 
   Future<List<Teacher>> getTeachers() async {
@@ -52,8 +55,13 @@ class DataService {
     }
   }
 
-  void addTeacher(Teacher teacher) {
-    _teachers.add(teacher);
+  Future<void> addTeacher(Teacher teacher) async {
+    try {
+      await _apiService.createTeacher(teacher);
+      _teachers.add(teacher);
+    } catch (e) {
+      print("Error adding teacher: $e");
+    }
   }
 
   Future<List<SchoolClass>> getClasses() async {
@@ -66,8 +74,13 @@ class DataService {
     }
   }
 
-  void addClass(SchoolClass cls) {
-    _classes.add(cls);
+  Future<void> addClass(SchoolClass cls) async {
+    try {
+      await _apiService.createClass(cls);
+      _classes.add(cls);
+    } catch (e) {
+      print("Error adding class: $e");
+    }
   }
 
   Future<List<Student>> getStudentsByClass(String classId) async {
@@ -78,7 +91,11 @@ class DataService {
 
   Future<void> saveAttendance(
       String classId, DateTime date, Map<String, String> attendance) async {
-    // Mock save
+    try {
+      await _apiService.saveAttendance(classId, date, attendance);
+    } catch (e) {
+      print("Error saving attendance: $e");
+    }
   }
 
   Future<List<ScheduleEvent>> getSchedule() async {
@@ -160,8 +177,11 @@ class DataService {
   }
 
   Future<void> payFee(String feeId) async {
-    // TODO: Implement API POST
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      await _apiService.payFee(feeId);
+    } catch (e) {
+      print("Error paying fee: $e");
+    }
   }
 
   Future<List<NotificationItem>> getNotifications() async {
@@ -174,7 +194,28 @@ class DataService {
   }
 
   Future<void> markNotificationAsRead(String id) async {
-    // TODO: Implement API POST
-    await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      await _apiService.markNotificationAsRead(id);
+    } catch (e) {
+      print("Error marking notification read: $e");
+    }
+  }
+
+  Future<List<Message>> getMessages(String userId) async {
+    try {
+      return await _apiService.getMessages(userId);
+    } catch (e) {
+      print("Error fetching messages: $e");
+      return [];
+    }
+  }
+
+  Future<void> sendMessage(
+      String senderId, String receiverId, String content) async {
+    try {
+      await _apiService.sendMessage(senderId, receiverId, content);
+    } catch (e) {
+      print("Error sending message: $e");
+    }
   }
 }

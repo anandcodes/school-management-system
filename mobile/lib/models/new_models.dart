@@ -23,6 +23,45 @@ class Exam {
   }
 }
 
+class Message {
+  final String id;
+  final String senderId;
+  final String receiverId;
+  final String content;
+  final bool read;
+  final DateTime createdAt;
+
+  Message({
+    required this.id,
+    required this.senderId,
+    required this.receiverId,
+    required this.content,
+    required this.read,
+    required this.createdAt,
+  });
+
+  factory Message.fromJson(Map<String, dynamic> json) {
+    return Message(
+      id: json['id'] ?? '',
+      senderId: json['senderId'] ?? '',
+      receiverId: json['receiverId'] ?? '',
+      content: json['content'] ?? '',
+      read: json['read'] ?? false,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'senderId': senderId,
+      'receiverId': receiverId,
+      'content': content,
+    };
+  }
+}
+
 class FeeRecord {
   final String id;
   final String studentName;

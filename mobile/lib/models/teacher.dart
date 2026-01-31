@@ -27,4 +27,11 @@ class Teacher {
       avatarUrl: json['avatar'],
     );
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'email': email,
+      'subject': subject,
+    };
+  }
 }
