@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function POST(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const notificationId = params.id;
+        const { id: notificationId } = await params;
         // Note: My Notification model doesn't strictly have a 'read' column in this version, 
         // but assuming we added it or will add it. If not, this is a placeholder.
         // Checking schema... it HAS 'read Boolean @default(false)'

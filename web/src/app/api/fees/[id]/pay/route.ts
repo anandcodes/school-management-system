@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function POST(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const feeId = params.id;
+        const { id: feeId } = await params;
         const updatedFee = await prisma.feeRecord.update({
             where: { id: feeId },
             data: { status: 'PAID' },
