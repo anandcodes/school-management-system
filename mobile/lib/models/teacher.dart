@@ -16,4 +16,15 @@ class Teacher {
     required this.studentsCount,
     this.avatarUrl,
   });
+  factory Teacher.fromJson(Map<String, dynamic> json) {
+    return Teacher(
+      id: json['id'].toString(),
+      name: json['name'] ?? '',
+      subject: json['subject'] ?? '',
+      email: json['email'] ?? '',
+      classesCount: (json['classes'] as List?)?.length ?? 0,
+      studentsCount: 0,
+      avatarUrl: json['avatar'],
+    );
+  }
 }

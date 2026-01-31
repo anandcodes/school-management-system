@@ -11,6 +11,16 @@ class Exam {
       required this.subject,
       required this.date,
       required this.totalMarks});
+
+  factory Exam.fromJson(Map<String, dynamic> json) {
+    return Exam(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      subject: json['subject'] ?? '',
+      date: json['date'] != null ? json['date'].toString().split('T')[0] : '',
+      totalMarks: json['totalMarks'] ?? 0,
+    );
+  }
 }
 
 class FeeRecord {
@@ -28,6 +38,21 @@ class FeeRecord {
       required this.amount,
       required this.status,
       required this.dueDate});
+
+  factory FeeRecord.fromJson(Map<String, dynamic> json) {
+    return FeeRecord(
+      id: json['id'] ?? '',
+      studentName: json['studentName'] ?? 'Student',
+      type: json['type'] ?? 'Tuition',
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      status: json['status'] == 'PAID'
+          ? 'Paid'
+          : (json['status'] == 'OVERDUE' ? 'Overdue' : 'Pending'),
+      dueDate: json['dueDate'] != null
+          ? json['dueDate'].toString().split('T')[0]
+          : '',
+    );
+  }
 }
 
 class NotificationItem {
@@ -45,6 +70,17 @@ class NotificationItem {
       required this.time,
       required this.type,
       this.read = false});
+
+  factory NotificationItem.fromJson(Map<String, dynamic> json) {
+    return NotificationItem(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      message: json['message'] ?? '',
+      time: json['time'] ?? 'Just now', // Requires calculation in real app
+      type: json['type'] ?? 'info',
+      read: json['read'] ?? false,
+    );
+  }
 }
 
 class ExamResult {
@@ -63,4 +99,15 @@ class ExamResult {
     required this.marksObtained,
     required this.grade,
   });
+
+  factory ExamResult.fromJson(Map<String, dynamic> json) {
+    return ExamResult(
+      id: json['id'] ?? '',
+      examId: json['examId'] ?? '',
+      studentId: json['studentId'] ?? '',
+      studentName: json['studentName'] ?? '',
+      marksObtained: (json['marksObtained'] as num?)?.toDouble() ?? 0.0,
+      grade: json['grade'] ?? 'F',
+    );
+  }
 }

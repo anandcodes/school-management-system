@@ -16,4 +16,15 @@ class Student {
     required this.status,
     this.avatarUrl,
   });
+  factory Student.fromJson(Map<String, dynamic> json) {
+    return Student(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      grade: json['grade'] ?? '',
+      classMatch: json['classMatch'] ?? '',
+      status: json['status'] ?? 'Active',
+      avatarUrl: json['avatar'],
+    );
+  }
 }
