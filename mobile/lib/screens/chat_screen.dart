@@ -56,8 +56,16 @@ class _ChatScreenState extends State<ChatScreen> {
     // If current user is Admin, send to a demo student 'ST-001'
     final receiverId = _currentUserId == 'ADMIN-01' ? 'ST-001' : 'ADMIN-01';
 
-    await DataService().sendMessage(_currentUserId, receiverId, content);
-    _loadMessages(); // Refresh
+    try {
+      await DataService().sendMessage(_currentUserId, receiverId, content);
+      _loadMessages(); // Refresh
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to send: $e")),
+        );
+      }
+    }
   }
 
   @override

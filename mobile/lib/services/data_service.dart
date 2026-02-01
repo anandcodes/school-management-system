@@ -217,6 +217,7 @@ class DataService {
       await _apiService.sendMessage(senderId, receiverId, content);
     } catch (e) {
       print("Error sending message: $e");
+      rethrow;
     }
   }
 }
