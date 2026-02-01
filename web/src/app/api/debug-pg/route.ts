@@ -33,11 +33,18 @@ export async function GET() {
             driver: 'node-postgres'
         });
     } catch (e: any) {
+        const maskedUrl = url.replace(/:[^:]*@/, ':****@');
         return NextResponse.json({
             status: 'error',
             message: e.message,
             stack: e.stack,
-            driver: 'node-postgres'
+            driver: 'node-postgres',
+            debugConfig: {
+                maskedUrl,
+                length: url.length,
+                firstChar: url.charCodeAt(0),
+                lastChar: url.charCodeAt(url.length - 1)
+            }
         }, { status: 500 });
     }
 }
