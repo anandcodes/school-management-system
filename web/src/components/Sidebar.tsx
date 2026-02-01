@@ -44,13 +44,15 @@ export function Sidebar({ className }: { className?: string }) {
                 <ul className="space-y-1 px-3">
                     {navigation.filter(item => {
                         if (!user) return false;
-                        if (user.role === 'admin') return true;
+                        const role = (user.role || '').toLowerCase();
+
+                        if (role === 'admin') return true;
 
                         // Role based filtering
-                        if (user.role === 'teacher') {
+                        if (role === 'teacher') {
                             return ['Dashboard', 'Classes', 'Schedule', 'Exams', 'Messages', 'Settings', 'Alerts'].includes(item.name);
                         }
-                        if (user.role === 'student' || user.role === 'parent') {
+                        if (role === 'student' || role === 'parent') {
                             return ['Dashboard', 'Schedule', 'Exams', 'Fees', 'Messages', 'Alerts', 'Settings'].includes(item.name);
                         }
                         return false;
