@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-// import bcrypt from 'bcryptjs'; // Uncomment after installing bcryptjs
 
 export async function PUT(request: Request) {
     try {
@@ -11,7 +10,21 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
         }
 
-        // Update user profile
+        // Handle fallback admin user (for demo/development)
+        if (userId === 'ADMIN-01' || userId === 'current-user-id') {
+            return NextResponse.json({
+                success: true,
+                message: 'Profile updated successfully (demo mode)',
+                user: {
+                    id: userId,
+                    name: name || 'Administrator',
+                    email: email || 'admin@school.com',
+                    role: 'admin',
+                },
+            });
+        }
+
+        // Update actual user in database
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {

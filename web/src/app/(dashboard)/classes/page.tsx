@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Edit2, Trash2, MoreVertical, Search, X, Users, Clock, ArrowRight } from "lucide-react";
+import { Plus, MoreVertical, Search, Edit2, Trash2, X, Clock, Users, BookOpen } from "lucide-react";
 import { SchoolClass } from "@/lib/types";
 import { api } from "@/services/api";
 import { Modal } from "@/components/Modal";
 import { AddClassForm } from "@/components/forms/AddClassForm";
 import { toast } from "sonner";
-import Link from "next/link";
+import { Pagination } from "@/components/Pagination";
 
 export default function ClassesPage() {
     const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -16,18 +16,33 @@ export default function ClassesPage() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [editingClass, setEditingClass] = useState<SchoolClass | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
-    const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+    // Pagination
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const limit = 10;
 
     useEffect(() => {
-        fetchClasses();
-    }, []);
+        const timer = setTimeout(() => {
+            fetchClasses();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [page, searchQuery]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery]);
 
     const fetchClasses = async () => {
+        setLoading(true);
         try {
-            const data = await api.getClasses();
-            setClasses(data);
+            const response = await api.getClassesPaginated(page, limit, searchQuery);
+            setClasses(response.data);
+            setTotalPages(response.meta.totalPages);
         } catch (error) {
             console.error("Failed to load classes", error);
+            toast.error("Failed to load classes");
         } finally {
             setLoading(false);
         }
@@ -35,39 +50,51 @@ export default function ClassesPage() {
 
     const handleAddClass = async (newClassData: Omit<SchoolClass, "id"> | Partial<SchoolClass>) => {
         try {
-            await api.getClasses(); // Trigger server refresh
-            setIsAddOpen(false);
-            fetchClasses();
+            const res = await fetch('/api/classes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newClassData),
+            });
+
+            if (res.ok) {
+                toast.success("Class added successfully!");
+                setIsAddOpen(false);
+                fetchClasses();
+            } else {
+                toast.error("Failed to add class");
+            }
         } catch (error) {
-            console.error("Failed to add class", error);
+            console.error("Error adding class:", error);
+            toast.error("Failed to add class");
         }
     };
 
     const handleEditClass = async (updatedData: Omit<SchoolClass, "id"> | Partial<SchoolClass>) => {
         if (!editingClass) return;
-
         try {
-            const updated = await api.updateClass(editingClass.id.toString(), updatedData as Partial<SchoolClass>);
-            setClasses(classes.map((c) => (c.id === updated.id ? updated : c)));
+            await api.updateClass(editingClass.id, updatedData as Partial<SchoolClass>);
+            toast.success("Class updated successfully!");
             setIsEditOpen(false);
             setEditingClass(null);
+            fetchClasses();
         } catch (error) {
             console.error("Error updating class:", error);
-            toast.error("Failed to update class. Please try again.");
+            toast.error("Failed to update class");
         }
     };
 
-    const handleDeleteClass = async (id: string | number) => {
-        if (!confirm("Are you sure you want to delete this class? Students will be unlinked.")) return;
-
-        try {
-            await api.deleteClass(id.toString());
-            setClasses(classes.filter((c) => c.id !== id));
-            setOpenMenuId(null);
-        } catch (error) {
-            console.error("Error deleting class:", error);
-            toast.error("Failed to delete class. Please try again.");
+    const handleDeleteClass = async (id: string) => {
+        if (confirm("Are you sure you want to delete this class?")) {
+            try {
+                await api.deleteClass(id);
+                toast.success("Class deleted successfully!");
+                fetchClasses();
+            } catch (error) {
+                console.error("Error deleting class:", error);
+                toast.error("Failed to delete class");
+            }
         }
+        setOpenMenuId(null);
     };
 
     const openEditModal = (cls: SchoolClass) => {
@@ -76,143 +103,93 @@ export default function ClassesPage() {
         setOpenMenuId(null);
     };
 
-    const filteredClasses = classes.filter(
-        (cls) =>
-            cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            cls.teacherName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            cls.grade.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
     return (
         <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <h1 className="text-3xl font-bold tracking-tight">Active Classes</h1>
-                <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <h1 className="text-3xl font-bold tracking-tight">Classes</h1>
+                <button
+                    onClick={() => setIsAddOpen(true)}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md px-4 py-2 text-sm font-medium shadow transition-colors flex items-center gap-2"
+                >
+                    <Plus className="h-4 w-4" /> Add Class
+                </button>
+            </div>
+
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                    type="text"
+                    placeholder="Search classes..."
+                    className="w-full pl-9 pr-4 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
                     <button
-                        onClick={() => setIsAddOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
-                        <Plus className="h-4 w-4" />
-                        Add Class
+                        <X className="h-4 w-4" />
                     </button>
-                </div>
+                )}
             </div>
-
-            <div className="flex items-center gap-4 rounded-lg bg-card p-4 border border-border shadow-sm">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                        type="text"
-                        placeholder="Search classes by name, teacher or grade..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-10 w-full rounded-md border border-input bg-background pl-9 pr-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                    />
-                    {searchQuery && (
-                        <button
-                            onClick={() => setSearchQuery("")}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Add New Class">
-                <AddClassForm onCancel={() => setIsAddOpen(false)} onSubmit={handleAddClass} />
-            </Modal>
-
-            {editingClass && (
-                <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Class">
-                    <AddClassForm
-                        onCancel={() => setIsEditOpen(false)}
-                        onSubmit={handleEditClass}
-                        initialData={editingClass}
-                    />
-                </Modal>
-            )}
 
             {loading ? (
-                <div className="flex items-center justify-center h-48">
+                <div className="flex justify-center py-12">
                     <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
                 </div>
-            ) : filteredClasses.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-48 text-center">
-                    <p className="text-muted-foreground">
-                        {searchQuery ? "No classes found matching your search." : "No classes found. Add your first class!"}
+            ) : classes.length === 0 ? (
+                <div className="text-center py-12 border border-dashed border-border rounded-lg">
+                    <div className="mx-auto h-12 w-12 text-muted-foreground/50 flex items-center justify-center rounded-full bg-muted mb-4">
+                        <BookOpen className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-lg font-semibold">No classes found</h3>
+                    <p className="text-muted-foreground text-sm max-w-sm mx-auto mt-1">
+                        Try adjusting your search or add a new class to get started.
                     </p>
                 </div>
             ) : (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-                    {filteredClasses.map((cls) => (
-                        <div key={cls.id} className="group relative overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md cursor-pointer">
-                            <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${cls.color}`}></div>
-                            <div className="p-6 pl-8">
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
-                                        {cls.grade}
-                                    </span>
-                                    <div className="relative">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {classes.map((cls) => (
+                        <div key={cls.id} className="group relative rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
+                            <div className="absolute top-4 right-4">
+                                <button
+                                    onClick={() => setOpenMenuId(openMenuId === cls.id ? null : cls.id)}
+                                    className="p-1 rounded-md text-muted-foreground hover:bg-muted transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                >
+                                    <MoreVertical className="h-4 w-4" />
+                                </button>
+                                {openMenuId === cls.id && (
+                                    <div className="absolute right-0 top-8 w-32 rounded-md border border-border bg-popover shadow-md z-10 animate-in fade-in zoom-in-95 duration-200">
                                         <button
-                                            onClick={() => setOpenMenuId(openMenuId === cls.id ? null : cls.id)}
-                                            className="text-muted-foreground hover:text-foreground"
+                                            onClick={() => openEditModal(cls)}
+                                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors text-left"
                                         >
-                                            <MoreVertical className="h-5 w-5" />
+                                            <Edit2 className="h-3 w-3" /> Edit
                                         </button>
-                                        {openMenuId === cls.id && (
-                                            <div className="absolute right-0 mt-2 w-36 bg-popover border border-border rounded-md shadow-lg z-10">
-                                                <button
-                                                    onClick={() => openEditModal(cls)}
-                                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-foreground hover:bg-muted"
-                                                >
-                                                    <Edit2 className="h-4 w-4" />
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteClass(cls.id)}
-                                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        )}
+                                        <button
+                                            onClick={() => handleDeleteClass(cls.id)}
+                                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-left"
+                                        >
+                                            <Trash2 className="h-3 w-3" /> Delete
+                                        </button>
                                     </div>
-                                </div>
+                                )}
+                            </div>
 
-                                <h3 className="text-xl font-bold mb-1">{cls.name}</h3>
-                                <p className="text-sm text-muted-foreground mb-6">by {cls.teacherName}</p>
+                            <div className="flex flex-col h-full">
+                                <div className={`h-2 w-12 rounded-full mb-4 ${cls.color}`} />
+                                <h3 className="font-semibold text-lg">{cls.name}</h3>
+                                <p className="text-sm text-muted-foreground mb-4">{cls.grade} • {cls.teacherName}</p>
 
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2 text-muted-foreground">
-                                            <Users className="h-4 w-4" />
-                                            <span>{cls.studentsCount} Students</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-muted-foreground">
-                                            <Clock className="h-4 w-4" />
-                                            <span>{cls.time}</span>
-                                        </div>
+                                <div className="mt-auto grid grid-cols-2 gap-2 text-sm">
+                                    <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                                        <Users className="h-4 w-4 text-muted-foreground" />
+                                        <span className="font-medium">{cls.studentsCount || 0}</span>
                                     </div>
-
-                                    <div>
-                                        <div className="flex items-center justify-between text-xs mb-1.5">
-                                            <span className="font-medium">Progress</span>
-                                            <span className="text-muted-foreground">{cls.progress}%</span>
-                                        </div>
-                                        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                                            <div
-                                                className={`h-full rounded-full ${cls.color}`}
-                                                style={{ width: `${cls.progress}%` }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-6 flex items-center text-primary text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-[-10px] group-hover:translate-x-0">
-                                        <Link href={`/classes/${cls.id}/attendance`} className="flex items-center hover:underline">
-                                            Take Attendance <ArrowRight className="ml-1 h-4 w-4" />
-                                        </Link>
+                                    <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                                        <Clock className="h-4 w-4 text-muted-foreground" />
+                                        <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{cls.time}</span>
                                     </div>
                                 </div>
                             </div>
@@ -220,6 +197,28 @@ export default function ClassesPage() {
                     ))}
                 </div>
             )}
+
+            {/* Pagination Controls */}
+            {!loading && classes.length > 0 && (
+                <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    isLoading={loading}
+                />
+            )}
+
+            <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Add New Class">
+                <AddClassForm onSubmit={handleAddClass} onCancel={() => setIsAddOpen(false)} />
+            </Modal>
+
+            <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Class">
+                <AddClassForm
+                    initialData={editingClass}
+                    onSubmit={handleEditClass}
+                    onCancel={() => setIsEditOpen(false)}
+                />
+            </Modal>
         </div>
     );
 }

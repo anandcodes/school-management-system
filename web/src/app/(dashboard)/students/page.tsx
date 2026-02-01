@@ -7,10 +7,10 @@ import { api } from "@/services/api";
 import { Modal } from "@/components/Modal";
 import { AddStudentForm } from "@/components/forms/AddStudentForm";
 import { toast } from "sonner";
+import { Pagination } from "@/components/Pagination";
 
 export default function StudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
-    const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -19,57 +19,44 @@ export default function StudentsPage() {
     const [statusFilter, setStatusFilter] = useState<string>("All");
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchStudents();
-    }, []);
+    // Pagination state
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const limit = 10;
 
     useEffect(() => {
-        filterStudents();
-    }, [students, searchQuery, statusFilter]);
+        const timer = setTimeout(() => {
+            fetchStudents();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [page, searchQuery, statusFilter]);
+
+    // Reset page when filters change
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery, statusFilter]);
 
     const fetchStudents = async () => {
+        setLoading(true);
         try {
-            const data = await api.getStudents();
-            setStudents(data);
+            const response = await api.getStudentsPaginated(page, limit, searchQuery, statusFilter);
+            setStudents(response.data);
+            setTotalPages(response.meta.totalPages);
         } catch (error) {
             console.error("Failed to fetch students", error);
+            toast.error("Failed to fetch students");
         } finally {
             setLoading(false);
         }
     };
 
-    const filterStudents = () => {
-        let filtered = [...students];
-
-        // Search filter
-        if (searchQuery) {
-            filtered = filtered.filter(
-                (s) =>
-                    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    s.id.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-        }
-
-        // Status filter
-        if (statusFilter !== "All") {
-            filtered = filtered.filter((s) => s.status === statusFilter);
-        }
-
-        setFilteredStudents(filtered);
+    const handleAddSuccess = () => {
+        toast.success("Student added successfully!");
+        setIsAddOpen(false);
+        fetchStudents();
     };
 
-    const handleAddStudent = async (newStudentData: Omit<Student, "id"> | Partial<Student>) => {
-        try {
-            await api.getStudents(); // This will trigger POST via form
-            setIsAddOpen(false);
-            fetchStudents(); // Refresh list
-        } catch (error) {
-            console.error("Failed to add student", error);
-        }
-    };
-
-    const handleEditStudent = async (updatedData: Omit<Student, "id"> | Partial<Student>) => {
+    const handleEditSubmit = async (updatedData: any) => {
         if (!editingStudent) return;
 
         try {
@@ -84,7 +71,7 @@ export default function StudentsPage() {
         }
     };
 
-    const handleDeleteStudent = async (id: string) => {
+    const handleDelete = async (id: string) => {
         const studentToDelete = students.find(s => s.id === id);
         if (!studentToDelete) return;
 
@@ -109,40 +96,25 @@ export default function StudentsPage() {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <h1 className="text-3xl font-bold tracking-tight">Students</h1>
                 <button
                     onClick={() => setIsAddOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md px-4 py-2 text-sm font-medium shadow transition-colors flex items-center gap-2"
                 >
-                    <Plus className="h-4 w-4" />
-                    Add Student
+                    <Plus className="h-4 w-4" /> Add Student
                 </button>
             </div>
 
-            <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Add New Student">
-                <AddStudentForm onCancel={() => setIsAddOpen(false)} onSubmit={handleAddStudent} />
-            </Modal>
-
-            {editingStudent && (
-                <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Student">
-                    <AddStudentForm
-                        onCancel={() => setIsEditOpen(false)}
-                        onSubmit={handleEditStudent}
-                        initialData={editingStudent}
-                    />
-                </Modal>
-            )}
-
-            <div className="flex flex-col sm:flex-row items-center gap-4 rounded-lg bg-card p-4 border border-border shadow-sm">
-                <div className="relative flex-1 w-full">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <input
                         type="text"
                         placeholder="Search students..."
+                        className="w-full pl-9 pr-4 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-10 w-full rounded-md border border-input bg-background pl-9 pr-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                     {searchQuery && (
                         <button
@@ -153,116 +125,135 @@ export default function StudentsPage() {
                         </button>
                     )}
                 </div>
-                <div className="flex gap-2">
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                    >
-                        <option value="All">All Status</option>
-                        <option value="Active">Active</option>
-                        <option value="Absent">Absent</option>
-                        <option value="Suspended">Suspended</option>
-                    </select>
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
+                    <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                    {["All", "Active", "Absent", "Suspended"].map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => setStatusFilter(status)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${statusFilter === status
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                }`}
+                        >
+                            {status}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden min-h-[300px]">
-                {loading ? (
-                    <div className="flex items-center justify-center h-48">
-                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            {loading ? (
+                <div className="flex justify-center py-12">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                </div>
+            ) : students.length === 0 ? (
+                <div className="text-center py-12 border border-dashed border-border rounded-lg">
+                    <div className="mx-auto h-12 w-12 text-muted-foreground/50 flex items-center justify-center rounded-full bg-muted mb-4">
+                        <UserIcon className="h-6 w-6" />
                     </div>
-                ) : (
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-muted/50 text-muted-foreground">
-                            <tr>
-                                <th className="px-6 py-4 font-medium">Student Info</th>
-                                <th className="px-6 py-4 font-medium hidden sm:table-cell">Contact</th>
-                                <th className="px-6 py-4 font-medium">Grade</th>
-                                <th className="px-6 py-4 font-medium">Status</th>
-                                <th className="px-6 py-4 font-medium text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                            {filteredStudents.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                                        {searchQuery || statusFilter !== "All"
-                                            ? "No students found matching your filters."
-                                            : "No students found. Add your first student!"}
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredStudents.map((student) => (
-                                    <tr key={student.id} className="group hover:bg-muted/30 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                                                    {student.name.charAt(0)}
-                                                </div>
-                                                <div>
-                                                    <div className="font-medium text-foreground">{student.name}</div>
-                                                    <div className="text-xs text-muted-foreground font-mono">{student.id}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 hidden sm:table-cell">
-                                            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                                                <div className="flex items-center gap-2">
-                                                    <Mail className="h-3 w-3" /> {student.email}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-400/10 dark:text-blue-400 dark:ring-blue-400/20">
-                                                {student.grade} - {student.classMatch}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span
-                                                className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${student.status === "Active"
-                                                    ? "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-500/10 dark:text-green-400 dark:ring-green-500/20"
-                                                    : student.status === "Absent"
-                                                        ? "bg-yellow-50 text-yellow-800 ring-yellow-600/20 dark:bg-yellow-500/10 dark:text-yellow-400 dark:ring-yellow-500/20"
-                                                        : "bg-red-50 text-red-700 ring-red-600/10 dark:bg-red-400/10 dark:text-red-400 dark:ring-red-400/20"
-                                                    }`}
-                                            >
-                                                {student.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right relative">
-                                            <button
-                                                onClick={() => setOpenMenuId(openMenuId === student.id ? null : student.id)}
-                                                className="text-muted-foreground hover:text-foreground"
-                                            >
-                                                <MoreVertical className="h-5 w-5" />
-                                            </button>
-                                            {openMenuId === student.id && (
-                                                <div className="absolute right-0 mt-2 w-36 bg-popover border border-border rounded-md shadow-lg z-10">
-                                                    <button
-                                                        onClick={() => openEditModal(student)}
-                                                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-foreground hover:bg-muted"
-                                                    >
-                                                        <Edit2 className="h-4 w-4" />
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteStudent(student.id)}
-                                                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                        Delete
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                )}
-            </div>
+                    <h3 className="text-lg font-semibold">No students found</h3>
+                    <p className="text-muted-foreground text-sm max-w-sm mx-auto mt-1">
+                        {searchQuery || statusFilter !== "All"
+                            ? "Try adjusting your search or filters to find what you're looking for."
+                            : "Get started by adding your first student to the system."}
+                    </p>
+                    {(searchQuery || statusFilter !== "All") && (
+                        <button
+                            onClick={() => { setSearchQuery(""); setStatusFilter("All"); }}
+                            className="mt-4 text-primary text-sm font-medium hover:underline"
+                        >
+                            Clear filters
+                        </button>
+                    )}
+                </div>
+            ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {students.map((student) => (
+                        <div key={student.id} className="group relative rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
+                            <div className="absolute top-4 right-4">
+                                <button
+                                    onClick={() => setOpenMenuId(openMenuId === student.id ? null : student.id)}
+                                    className="p-1 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+                                >
+                                    <MoreVertical className="h-4 w-4" />
+                                </button>
+                                {openMenuId === student.id && (
+                                    <div className="absolute right-0 top-8 w-32 rounded-md border border-border bg-popover shadow-md z-10 animate-in fade-in zoom-in-95 duration-200">
+                                        <button
+                                            onClick={() => openEditModal(student)}
+                                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors text-left"
+                                        >
+                                            <Edit2 className="h-3 w-3" /> Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(student.id)}
+                                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-left"
+                                        >
+                                            <Trash2 className="h-3 w-3" /> Delete
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex flex-col items-center text-center">
+                                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary mb-4">
+                                    {student.name.charAt(0)}
+                                </div>
+                                <h3 className="font-semibold text-lg">{student.name}</h3>
+                                <p className="text-sm text-muted-foreground mb-1">{student.id}</p>
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${student.status === "Active" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
+                                        student.status === "Absent" ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" :
+                                            "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                    }`}>
+                                    {student.status}
+                                </span>
+
+                                <div className="mt-6 w-full grid grid-cols-2 gap-2 text-sm">
+                                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/50">
+                                        <span className="text-muted-foreground text-xs">Grade</span>
+                                        <span className="font-medium">{student.grade}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/50">
+                                        <span className="text-muted-foreground text-xs">Class</span>
+                                        <span className="font-medium">{student.classId || "N/A"}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Pagination Controls */}
+            {!loading && students.length > 0 && (
+                <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    isLoading={loading}
+                />
+            )}
+
+            <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Add New Student">
+                <AddStudentForm onSuccess={handleAddSuccess} onCancel={() => setIsAddOpen(false)} />
+            </Modal>
+
+            <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Student">
+                <AddStudentForm
+                    initialData={editingStudent}
+                    onSuccess={handleEditSubmit}
+                    onCancel={() => setIsEditOpen(false)}
+                />
+            </Modal>
         </div>
     );
+}
+
+function UserIcon({ className }: { className?: string }) {
+    return (
+        <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+        </svg>
+    )
 }

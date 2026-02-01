@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Users, GraduationCap, BookOpen, UserCheck, TrendingUp, Plus } from "lucide-react";
 import { api } from "@/services/api";
 import { DashboardStats, ActivityItem } from "@/lib/types";
+import { AnalyticsDashboard } from "@/components/dashboard/AnalyticsDashboard";
 
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -72,45 +73,31 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Simple placeholder for a chart */}
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm min-h-[300px]">
-          <h3 className="font-semibold mb-6">Attendance Overview</h3>
-          <div className="flex h-48 w-full items-end justify-between gap-2">
-            {[65, 45, 75, 55, 80, 70, 90, 60, 75, 85, 95, 80].map((h, i) => (
-              <div key={i} className="w-full bg-primary/20 rounded-t-sm hover:bg-primary transition-all duration-300 relative group" style={{ height: `${h}%` }}>
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-border shadow-sm">
-                  Day {i + 1}: {h}%
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <AnalyticsDashboard />
 
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-          <h3 className="font-semibold mb-4">Recent Activities</h3>
-          <div className="space-y-0">
-            {activities.length === 0 ? (
-              <p className="text-muted-foreground text-sm italic py-4">No recent activities.</p>
-            ) : (
-              activities.map((item, i) => (
-                <div key={i} className="flex items-center justify-between border-b last:border-0 border-border py-4 last:pb-0 first:pt-0">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xs text-primary">
-                      {item.user.charAt(0)}
-                    </div>
-                    <div className="text-sm">
-                      <p className="font-medium text-foreground">{item.user}</p>
-                      <p className="text-muted-foreground text-xs">
-                        {item.action} <span className="text-primary">{item.target}</span>
-                      </p>
-                    </div>
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <h3 className="font-semibold mb-4">Recent Activities</h3>
+        <div className="space-y-0">
+          {activities.length === 0 ? (
+            <p className="text-muted-foreground text-sm italic py-4">No recent activities.</p>
+          ) : (
+            activities.map((item, i) => (
+              <div key={i} className="flex items-center justify-between border-b last:border-0 border-border py-4 last:pb-0 first:pt-0">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xs text-primary">
+                    {item.user.charAt(0)}
                   </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">{item.time}</span>
+                  <div className="text-sm">
+                    <p className="font-medium text-foreground">{item.user}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {item.action} <span className="text-primary">{item.target}</span>
+                    </p>
+                  </div>
                 </div>
-              ))
-            )}
-          </div>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">{item.time}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -9,6 +9,17 @@ export const api = {
         } catch (e) { console.error(e); }
         return MOCK_STUDENTS; // Fallback
     },
+    getStudentsPaginated: async (page: number, limit: number, search?: string, status?: string): Promise<{ data: Student[], meta: any }> => {
+        try {
+            const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+            if (search) params.append('search', search);
+            if (status && status !== 'All') params.append('status', status);
+
+            const res = await fetch(`/api/students?${params.toString()}`);
+            if (res.ok) return await res.json();
+        } catch (e) { console.error(e); }
+        return { data: MOCK_STUDENTS, meta: { total: MOCK_STUDENTS.length, page, limit, totalPages: 1 } };
+    },
     getTeachers: async (): Promise<Teacher[]> => {
         try {
             const res = await fetch('/api/teachers');
@@ -16,12 +27,32 @@ export const api = {
         } catch (e) { console.error(e); }
         return MOCK_TEACHERS; // Fallback
     },
+    getTeachersPaginated: async (page: number, limit: number, search?: string): Promise<{ data: Teacher[], meta: any }> => {
+        try {
+            const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+            if (search) params.append('search', search);
+
+            const res = await fetch(`/api/teachers?${params.toString()}`);
+            if (res.ok) return await res.json();
+        } catch (e) { console.error(e); }
+        return { data: MOCK_TEACHERS, meta: { total: MOCK_TEACHERS.length, page, limit, totalPages: 1 } };
+    },
     getClasses: async (): Promise<SchoolClass[]> => {
         try {
             const res = await fetch('/api/classes');
             if (res.ok) return await res.json();
         } catch (e) { console.error(e); }
         return MOCK_CLASSES; // Fallback
+    },
+    getClassesPaginated: async (page: number, limit: number, search?: string): Promise<{ data: SchoolClass[], meta: any }> => {
+        try {
+            const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+            if (search) params.append('search', search);
+
+            const res = await fetch(`/api/classes?${params.toString()}`);
+            if (res.ok) return await res.json();
+        } catch (e) { console.error(e); }
+        return { data: MOCK_CLASSES, meta: { total: MOCK_CLASSES.length, page, limit, totalPages: 1 } };
     },
     getSchedule: async (): Promise<ScheduleEvent[]> => {
         try {
@@ -75,6 +106,17 @@ export const api = {
             { id: "1", title: "Midterm Exam 2023", classId: "1", subject: "Mathematics", date: "2023-10-15", totalMarks: 100 },
         ];
     },
+    getExamsPaginated: async (page: number, limit: number, search?: string): Promise<{ data: Exam[], meta: any }> => {
+        try {
+            const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+            if (search) params.append('search', search);
+
+            const res = await fetch(`/api/exams?${params.toString()}`);
+            if (res.ok) return await res.json();
+        } catch (e) { console.error(e); }
+        // Return structured mock
+        return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+    },
     getExamResults: async (examId: string): Promise<ExamResult[]> => {
         return [];
     },
@@ -95,6 +137,17 @@ export const api = {
         return [
             { id: "F-001", studentId: "ST-001", studentName: "Alice Johnson", type: "Tuition Fee", amount: 1200, dueDate: "2023-09-01", status: "Paid" },
         ];
+    },
+    getFeesPaginated: async (page: number, limit: number, search?: string, status?: string): Promise<{ data: FeeRecord[], meta: any }> => {
+        try {
+            const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+            if (search) params.append('search', search);
+            if (status && status !== 'All') params.append('status', status);
+
+            const res = await fetch(`/api/fees?${params.toString()}`);
+            if (res.ok) return await res.json();
+        } catch (e) { console.error(e); }
+        return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
     },
     payFee: async (feeId: string): Promise<boolean> => {
         return true;
