@@ -29,7 +29,10 @@ export async function GET() {
 
         return NextResponse.json({
             status: 'ok',
-            databaseUrlRef: process.env.DATABASE_URL ? 'Defined (Hidden)' : 'UNDEFINED',
+            databaseUrlRef: process.env.DATABASE_URL ? 'Defined' : 'UNDEFINED',
+            config: {
+                host: process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'Unknown',
+            },
             userCount,
             writeTest: 'Success',
             env: process.env.NODE_ENV
