@@ -6,6 +6,7 @@ import { Teacher } from "@/lib/types";
 import { api } from "@/services/api";
 import { Modal } from "@/components/Modal";
 import { AddTeacherForm } from "@/components/forms/AddTeacherForm";
+import { toast } from "sonner";
 
 export default function TeachersPage() {
     const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -50,8 +51,8 @@ export default function TeachersPage() {
             setIsEditOpen(false);
             setEditingTeacher(null);
         } catch (error) {
-            console.error("Failed to update teacher", error);
-            alert("Failed to update teacher. Please try again.");
+            console.error("Error updating teacher:", error);
+            toast.error("Failed to update teacher. Please try again.");
         }
     };
 
@@ -63,8 +64,8 @@ export default function TeachersPage() {
             setTeachers(teachers.filter((t) => t.id !== id));
             setOpenMenuId(null);
         } catch (error) {
-            console.error("Failed to delete teacher", error);
-            alert("Failed to delete teacher. Please try again.");
+            console.error("Error deleting teacher:", error);
+            toast.error("Failed to delete teacher. Please try again.");
         }
     };
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { User, Bell, Shield, Key, Save, X } from "lucide-react";
 import { Modal } from "@/components/Modal";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
     const [profileData, setProfileData] = useState({
@@ -59,13 +60,13 @@ export default function SettingsPage() {
             });
 
             if (profileResponse.ok && notificationsResponse.ok) {
-                alert('Settings saved successfully!');
+                toast.success('Settings saved successfully!');
             } else {
-                alert('Failed to save some settings. Please try again.');
+                toast.warning('Failed to save some settings. Please try again.');
             }
         } catch (error) {
             console.error('Save error:', error);
-            alert('Failed to save settings. Please try again.');
+            toast.error('Failed to save settings. Please try again.');
         } finally {
             setSaving(false);
         }
@@ -73,12 +74,12 @@ export default function SettingsPage() {
 
     const handlePasswordChange = async () => {
         if (passwordData.newPassword !== passwordData.confirmPassword) {
-            alert('New passwords do not match!');
+            toast.error('New passwords do not match!');
             return;
         }
 
         if (passwordData.newPassword.length < 6) {
-            alert('Password must be at least 6 characters long!');
+            toast.error('Password must be at least 6 characters long!');
             return;
         }
 
@@ -96,15 +97,15 @@ export default function SettingsPage() {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Password changed successfully!');
+                toast.success('Password changed successfully!');
                 setIsPasswordModalOpen(false);
                 setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
             } else {
-                alert(data.error || 'Failed to change password');
+                toast.error(data.error || 'Failed to change password');
             }
         } catch (error) {
             console.error('Password change error:', error);
-            alert('Failed to change password. Please try again.');
+            toast.error('Failed to change password. Please try again.');
         }
     };
 

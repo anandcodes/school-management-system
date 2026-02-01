@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, MoreVertical, Users, Clock, ArrowRight, Search, Edit2, Trash2, X } from "lucide-react";
+import { Plus, Edit2, Trash2, MoreVertical, Search, X, Users, Clock, ArrowRight } from "lucide-react";
 import { SchoolClass } from "@/lib/types";
 import { api } from "@/services/api";
 import { Modal } from "@/components/Modal";
 import { AddClassForm } from "@/components/forms/AddClassForm";
+import { toast } from "sonner";
 import Link from "next/link";
 
 export default function ClassesPage() {
@@ -51,8 +52,8 @@ export default function ClassesPage() {
             setIsEditOpen(false);
             setEditingClass(null);
         } catch (error) {
-            console.error("Failed to update class", error);
-            alert("Failed to update class. Please try again.");
+            console.error("Error updating class:", error);
+            toast.error("Failed to update class. Please try again.");
         }
     };
 
@@ -64,8 +65,8 @@ export default function ClassesPage() {
             setClasses(classes.filter((c) => c.id !== id));
             setOpenMenuId(null);
         } catch (error) {
-            console.error("Failed to delete class", error);
-            alert("Failed to delete class. Please try again.");
+            console.error("Error deleting class:", error);
+            toast.error("Failed to delete class. Please try again.");
         }
     };
 

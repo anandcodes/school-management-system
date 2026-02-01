@@ -6,6 +6,7 @@ import { Student } from "@/lib/types";
 import { api } from "@/services/api";
 import { Modal } from "@/components/Modal";
 import { AddStudentForm } from "@/components/forms/AddStudentForm";
+import { toast } from "sonner";
 
 export default function StudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
@@ -72,27 +73,32 @@ export default function StudentsPage() {
         if (!editingStudent) return;
 
         try {
-            const updated = await api.updateStudent(editingStudent.id, updatedData as Partial<Student>);
-            setStudents(students.map((s) => (s.id === updated.id ? updated : s)));
+            await api.updateStudent(editingStudent.id, updatedData as Partial<Student>);
+            toast.success("Student updated successfully!");
             setIsEditOpen(false);
             setEditingStudent(null);
+            fetchStudents();
         } catch (error) {
-            console.error("Failed to update student", error);
-            alert("Failed to update student. Please try again.");
+            console.error("Error updating student:", error);
+            toast.error("Failed to update student. Please try again.");
         }
     };
 
     const handleDeleteStudent = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this student? This action cannot be undone.")) return;
+        const studentToDelete = students.find(s => s.id === id);
+        if (!studentToDelete) return;
 
-        try {
-            await api.deleteStudent(id);
-            setStudents(students.filter((s) => s.id !== id));
-            setOpenMenuId(null);
-        } catch (error) {
-            console.error("Failed to delete student", error);
-            alert("Failed to delete student. Please try again.");
+        if (window.confirm(`Are you sure you want to delete ${studentToDelete.name}? This action cannot be undone.`)) {
+            try {
+                await api.deleteStudent(id);
+                toast.success(`${studentToDelete.name} deleted successfully!`);
+                fetchStudents();
+            } catch (error) {
+                console.error("Error deleting student:", error);
+                toast.error("Failed to delete student. Please try again.");
+            }
         }
+        setOpenMenuId(null);
     };
 
     const openEditModal = (student: Student) => {
