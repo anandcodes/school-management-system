@@ -3,7 +3,9 @@ import '../../models/teacher.dart';
 import '../../services/data_service.dart';
 
 class AddTeacherScreen extends StatefulWidget {
-  const AddTeacherScreen({super.key});
+  final Teacher? teacher; // Optional teacher for editing
+
+  const AddTeacherScreen({super.key, this.teacher});
 
   @override
   State<AddTeacherScreen> createState() => _AddTeacherScreenState();
@@ -18,35 +20,91 @@ class _AddTeacherScreenState extends State<AddTeacherScreen> {
   bool _isLoading = false;
   final DataService _dataService = DataService();
 
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill form if editing
+    if (widget.teacher != null) {
+      _nameController.text = widget.teacher!.name;
+      _emailController.text = widget.teacher!.email;
+      _subjectController.text = widget.teacher!.subject;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _subjectController.dispose();
+    super.dispose();
+  }
+
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      final teacher = Teacher(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: _nameController.text,
-        email: _emailController.text,
-        subject: _subjectController.text,
-        classesCount: 0,
-        studentsCount: 0,
-      );
+      try {
+        if (widget.teacher != null) {
+          // Update existing teacher
+          final updatedData = {
+            'name': _nameController.text,
+            'email': _emailController.text,
+            'subject': _subjectController.text,
+          };
+          await _dataService.updateTeacher(widget.teacher!.id, updatedData);
 
-      _dataService.addTeacher(teacher);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Teacher updated successfully')),
+            );
+            Navigator.of(context).pop(true);
+          }
+        } else {
+          // Create new teacher
+          final teacher = Teacher(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            name: _nameController.text,
+            email: _emailController.text,
+            subject: _subjectController.text,
+            classesCount: 0,
+            studentsCount: 0,
+          );
 
-      await Future.delayed(const Duration(milliseconds: 500));
+          await _dataService.addTeacher(teacher);
 
-      if (mounted) {
-        Navigator.of(context).pop(true);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Teacher added successfully')),
+            );
+            Navigator.of(context).pop(true);
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.teacher != null;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Teacher')),
+      appBar: AppBar(
+        title: Text(isEditing ? 'Edit Teacher' : 'Add Teacher'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -99,9 +157,11 @@ class _AddTeacherScreenState extends State<AddTeacherScreen> {
                   child: _isLoading
                       ? const Center(
                           child: CircularProgressIndicator(color: Colors.white))
-                      : const Text('Save Teacher',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold)),
+                      : Text(
+                          isEditing ? 'Update Teacher' : 'Save Teacher',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
             ],

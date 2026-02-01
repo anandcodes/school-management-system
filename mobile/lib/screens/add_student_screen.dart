@@ -3,7 +3,9 @@ import '../../models/student.dart';
 import '../../services/data_service.dart';
 
 class AddStudentScreen extends StatefulWidget {
-  const AddStudentScreen({super.key});
+  final Student? student; // Optional student for editing
+
+  const AddStudentScreen({super.key, this.student});
 
   @override
   State<AddStudentScreen> createState() => _AddStudentScreenState();
@@ -20,36 +22,94 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
 
   final DataService _dataService = DataService();
 
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill form if editing
+    if (widget.student != null) {
+      _nameController.text = widget.student!.name;
+      _emailController.text = widget.student!.email;
+      _grade = widget.student!.grade;
+      _classMatch = widget.student!.classMatch;
+      _status = widget.student!.status;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      final student = Student(
-        id: "ST-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}", // Generate simpler ID
-        name: _nameController.text,
-        email: _emailController.text,
-        grade: _grade,
-        classMatch: _classMatch,
-        status: _status,
-      );
+      try {
+        if (widget.student != null) {
+          // Update existing student
+          final updatedData = {
+            'name': _nameController.text,
+            'email': _emailController.text,
+            'grade': _grade,
+            'classMatch': _classMatch,
+            'status': _status,
+          };
+          await _dataService.updateStudent(widget.student!.id, updatedData);
 
-      _dataService.addStudent(student);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Student updated successfully')),
+            );
+            Navigator.of(context).pop(true);
+          }
+        } else {
+          // Create new student
+          final student = Student(
+            id: "ST-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}",
+            name: _nameController.text,
+            email: _emailController.text,
+            grade: _grade,
+            classMatch: _classMatch,
+            status: _status,
+          );
 
-      // Simulate network delay
-      await Future.delayed(const Duration(milliseconds: 500));
+          await _dataService.addStudent(student);
 
-      if (mounted) {
-        Navigator.of(context).pop(true); // Return true to indicate success
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Student added successfully')),
+            );
+            Navigator.of(context).pop(true);
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.student != null;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Student')),
+      appBar: AppBar(
+        title: Text(isEditing ? 'Edit Student' : 'Add Student'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -95,7 +155,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      initialValue: _grade,
+                      value: _grade,
                       decoration: const InputDecoration(
                           labelText: 'Grade', border: OutlineInputBorder()),
                       items: ['9th', '10th', '11th', '12th']
@@ -108,7 +168,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      initialValue: _classMatch,
+                      value: _classMatch,
                       decoration: const InputDecoration(
                           labelText: 'Class', border: OutlineInputBorder()),
                       items: ['A', 'B', 'C']
@@ -146,6 +206,13 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   ),
                 ],
               ),
+              RadioListTile<String>(
+                title: const Text('Suspended'),
+                value: 'Suspended',
+                groupValue: _status,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setState(() => _status = v!),
+              ),
               const SizedBox(height: 32),
               SizedBox(
                 height: 50,
@@ -158,9 +225,11 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   child: _isLoading
                       ? const Center(
                           child: CircularProgressIndicator(color: Colors.white))
-                      : const Text('Save Student',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold)),
+                      : Text(
+                          isEditing ? 'Update Student' : 'Save Student',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
             ],

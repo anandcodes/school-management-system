@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Teacher } from "@/lib/types";
 
 interface AddTeacherFormProps {
     onCancel: () => void;
-    onSubmit: (teacher: Omit<Teacher, "id">) => void;
+    onSubmit: (teacher: Omit<Teacher, "id"> | Partial<Teacher>) => void;
+    initialData?: Teacher | null;
 }
 
-export function AddTeacherForm({ onCancel, onSubmit }: AddTeacherFormProps) {
+export function AddTeacherForm({ onCancel, onSubmit, initialData }: AddTeacherFormProps) {
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -16,6 +17,18 @@ export function AddTeacherForm({ onCancel, onSubmit }: AddTeacherFormProps) {
         classesCount: 0,
         studentsCount: 0,
     });
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                name: initialData.name || "",
+                email: initialData.email || "",
+                subject: initialData.subject || "",
+                classesCount: initialData.classesCount || 0,
+                studentsCount: initialData.studentsCount || 0,
+            });
+        }
+    }, [initialData]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

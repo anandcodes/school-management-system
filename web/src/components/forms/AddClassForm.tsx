@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SchoolClass } from "@/lib/types";
 
 interface AddClassFormProps {
     onCancel: () => void;
-    onSubmit: (cls: Omit<SchoolClass, "id">) => void;
+    onSubmit: (cls: Omit<SchoolClass, "id"> | Partial<SchoolClass>) => void;
+    initialData?: SchoolClass | null;
 }
 
-export function AddClassForm({ onCancel, onSubmit }: AddClassFormProps) {
+export function AddClassForm({ onCancel, onSubmit, initialData }: AddClassFormProps) {
     const [formData, setFormData] = useState<Omit<SchoolClass, "id">>({
         name: "",
         grade: "",
@@ -18,6 +19,20 @@ export function AddClassForm({ onCancel, onSubmit }: AddClassFormProps) {
         progress: 0,
         color: "bg-blue-500",
     });
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                name: initialData.name || "",
+                grade: initialData.grade || "",
+                teacherName: initialData.teacherName || "",
+                studentsCount: initialData.studentsCount || 0,
+                time: initialData.time || "",
+                progress: initialData.progress || 0,
+                color: initialData.color || "bg-blue-500",
+            });
+        }
+    }, [initialData]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

@@ -169,6 +169,7 @@ class ApiService {
     // Note: requires backend implementation
     // final response = await http.post...
   }
+
   Future<List<Message>> getMessages(String userId) async {
     final response =
         await http.get(Uri.parse('$baseUrl/api/messages?userId=$userId'));
@@ -194,6 +195,137 @@ class ApiService {
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to send message: ${response.body}');
+    }
+  }
+
+  // ============================================
+  // UPDATE METHODS (NEW)
+  // ============================================
+
+  Future<Student> updateStudent(String id, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/students/$id'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    if (response.statusCode == 200) {
+      return Student.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to update student: ${response.body}');
+    }
+  }
+
+  Future<Teacher> updateTeacher(String id, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/teachers/$id'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    if (response.statusCode == 200) {
+      return Teacher.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to update teacher: ${response.body}');
+    }
+  }
+
+  Future<SchoolClass> updateClass(String id, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/classes/$id'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    if (response.statusCode == 200) {
+      return SchoolClass.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to update class: ${response.body}');
+    }
+  }
+
+  // ============================================
+  // DELETE METHODS (NEW)
+  // ============================================
+
+  Future<void> deleteStudent(String id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/students/$id'),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete student: ${response.body}');
+    }
+  }
+
+  Future<void> deleteTeacher(String id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/teachers/$id'),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete teacher: ${response.body}');
+    }
+  }
+
+  Future<void> deleteClass(String id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/classes/$id'),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete class: ${response.body}');
+    }
+  }
+
+  // ============================================
+  // SETTINGS API (NEW)
+  // ============================================
+
+  Future<Map<String, dynamic>> updateProfile(
+      String userId, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/settings/profile'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'userId': userId,
+        ...data,
+      }),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to update profile: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> changePassword(
+      String userId, String currentPassword, String newPassword) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/settings/password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'userId': userId,
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      }),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'Failed to change password');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateNotifications(
+      String userId, Map<String, bool> notifications) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/settings/notifications'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'userId': userId,
+        'notifications': notifications,
+      }),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to update notifications: ${response.body}');
     }
   }
 }

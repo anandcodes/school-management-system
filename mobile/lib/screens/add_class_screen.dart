@@ -3,7 +3,9 @@ import '../../models/school_class.dart';
 import '../../services/data_service.dart';
 
 class AddClassScreen extends StatefulWidget {
-  const AddClassScreen({super.key});
+  final SchoolClass? schoolClass; // Optional class for editing
+
+  const AddClassScreen({super.key, this.schoolClass});
 
   @override
   State<AddClassScreen> createState() => _AddClassScreenState();
@@ -20,37 +22,97 @@ class _AddClassScreenState extends State<AddClassScreen> {
   bool _isLoading = false;
   final DataService _dataService = DataService();
 
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill form if editing
+    if (widget.schoolClass != null) {
+      _nameController.text = widget.schoolClass!.name;
+      _teacherController.text = widget.schoolClass!.teacherName;
+      _timeController.text = widget.schoolClass!.time;
+      _grade = widget.schoolClass!.grade;
+      _color = widget.schoolClass!.color;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _teacherController.dispose();
+    _timeController.dispose();
+    super.dispose();
+  }
+
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      final cls = SchoolClass(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: _nameController.text,
-        grade: _grade,
-        teacherName: _teacherController.text,
-        studentsCount: 0,
-        time: _timeController.text,
-        progress: 0,
-        color: _color,
-      );
+      try {
+        if (widget.schoolClass != null) {
+          // Update existing class
+          final updatedData = {
+            'name': _nameController.text,
+            'grade': _grade,
+            'teacherName': _teacherController.text,
+            'time': _timeController.text,
+            'color': _color.value, // Send color as int
+          };
+          await _dataService.updateClass(widget.schoolClass!.id, updatedData);
 
-      _dataService.addClass(cls);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Class updated successfully')),
+            );
+            Navigator.of(context).pop(true);
+          }
+        } else {
+          // Create new class
+          final cls = SchoolClass(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            name: _nameController.text,
+            grade: _grade,
+            teacherName: _teacherController.text,
+            studentsCount: 0,
+            time: _timeController.text,
+            progress: 0,
+            color: _color,
+          );
 
-      await Future.delayed(const Duration(milliseconds: 500));
+          await _dataService.addClass(cls);
 
-      if (mounted) {
-        Navigator.of(context).pop(true);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Class added successfully')),
+            );
+            Navigator.of(context).pop(true);
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.schoolClass != null;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Class')),
+      appBar: AppBar(
+        title: Text(isEditing ? 'Edit Class' : 'Add Class'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -70,7 +132,7 @@ class _AddClassScreenState extends State<AddClassScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _grade,
+                value: _grade,
                 decoration: const InputDecoration(
                     labelText: 'Grade',
                     border: OutlineInputBorder(),
@@ -144,9 +206,11 @@ class _AddClassScreenState extends State<AddClassScreen> {
                   child: _isLoading
                       ? const Center(
                           child: CircularProgressIndicator(color: Colors.white))
-                      : const Text('Save Class',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold)),
+                      : Text(
+                          isEditing ? 'Update Class' : 'Save Class',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
             ],

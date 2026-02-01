@@ -220,4 +220,104 @@ class DataService {
       rethrow;
     }
   }
+
+  // ============================================
+  // UPDATE METHODS (NEW)
+  // ============================================
+
+  Future<Student> updateStudent(String id, Map<String, dynamic> data) async {
+    try {
+      return await _apiService.updateStudent(id, data);
+    } catch (e) {
+      print("Error updating student: $e");
+      rethrow;
+    }
+  }
+
+  Future<Teacher> updateTeacher(String id, Map<String, dynamic> data) async {
+    try {
+      return await _apiService.updateTeacher(id, data);
+    } catch (e) {
+      print("Error updating teacher: $e");
+      rethrow;
+    }
+  }
+
+  Future<SchoolClass> updateClass(String id, Map<String, dynamic> data) async {
+    try {
+      return await _apiService.updateClass(id, data);
+    } catch (e) {
+      print("Error updating class: $e");
+      rethrow;
+    }
+  }
+
+  // ============================================
+  // DELETE METHODS (NEW)
+  // ============================================
+
+  Future<void> deleteStudent(String id) async {
+    try {
+      await _apiService.deleteStudent(id);
+      _students.removeWhere((s) => s.id == id); // Update local cache
+    } catch (e) {
+      print("Error deleting student: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> deleteTeacher(String id) async {
+    try {
+      await _apiService.deleteTeacher(id);
+      _teachers.removeWhere((t) => t.id == id); // Update local cache
+    } catch (e) {
+      print("Error deleting teacher: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> deleteClass(String id) async {
+    try {
+      await _apiService.deleteClass(id);
+      _classes.removeWhere((c) => c.id == id); // Update local cache
+    } catch (e) {
+      print("Error deleting class: $e");
+      rethrow;
+    }
+  }
+
+  // ============================================
+  // SETTINGS METHODS (NEW)
+  // ============================================
+
+  Future<Map<String, dynamic>> updateProfile(
+      String userId, Map<String, dynamic> data) async {
+    try {
+      return await _apiService.updateProfile(userId, data);
+    } catch (e) {
+      print("Error updating profile: $e");
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> changePassword(
+      String userId, String currentPassword, String newPassword) async {
+    try {
+      return await _apiService.changePassword(
+          userId, currentPassword, newPassword);
+    } catch (e) {
+      print("Error changing password: $e");
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateNotifications(
+      String userId, Map<String, bool> notifications) async {
+    try {
+      return await _apiService.updateNotifications(userId, notifications);
+    } catch (e) {
+      print("Error updating notifications: $e");
+      rethrow;
+    }
+  }
 }

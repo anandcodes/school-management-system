@@ -146,5 +146,60 @@ export const api = {
             });
             return true;
         } catch (e) { return true; }
-    }
+    },
+
+    // --- Update/Delete Operations ---
+    updateStudent: async (id: string, data: Partial<Student>): Promise<Student> => {
+        const res = await fetch(`/api/students/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error('Failed to update student');
+        return res.json();
+    },
+
+    deleteStudent: async (id: string): Promise<boolean> => {
+        const res = await fetch(`/api/students/${id}`, {
+            method: 'DELETE',
+        });
+        if (!res.ok) throw new Error('Failed to delete student');
+        return true;
+    },
+
+    updateTeacher: async (id: string, data: Partial<Teacher>): Promise<Teacher> => {
+        const res = await fetch(`/api/teachers/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error('Failed to update teacher');
+        return res.json();
+    },
+
+    deleteTeacher: async (id: string): Promise<boolean> => {
+        const res = await fetch(`/api/teachers/${id}`, {
+            method: 'DELETE',
+        });
+        if (!res.ok) throw new Error('Failed to delete teacher');
+        return true;
+    },
+
+    updateClass: async (id: string, data: Partial<SchoolClass>): Promise<SchoolClass> => {
+        const res = await fetch(`/api/classes/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error('Failed to update class');
+        return res.json();
+    },
+
+    deleteClass: async (id: string): Promise<boolean> => {
+        const res = await fetch(`/api/classes/${id}`, {
+            method: 'DELETE',
+        });
+        if (!res.ok) throw new Error('Failed to delete class');
+        return true;
+    },
 };
