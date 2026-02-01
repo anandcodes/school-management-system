@@ -17,6 +17,12 @@ export async function GET() {
 
     try {
         console.log("Testing PG connection to:", url.split('@')[1]);
+        const maskedUrl = url.replace(/:[^:]*@/, ':****@');
+        console.log("Full URL (Masked):", maskedUrl);
+        console.log("URL Length:", url.length);
+        console.log("First char code:", url.charCodeAt(0));
+        console.log("Last char code:", url.charCodeAt(url.length - 1));
+
         await client.connect();
         const res = await client.query('SELECT NOW() as time');
         await client.end();
