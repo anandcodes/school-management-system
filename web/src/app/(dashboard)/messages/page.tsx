@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Send, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -18,16 +18,25 @@ export default function MessagesPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [loading, setLoading] = useState(true);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // For demo, hardcoding the "other" user.
     // Ideally, you'd select from a list of users.
     const otherUserId = user?.id === "ADMIN-01" ? "ST-001" : "ADMIN-01"; // Admin <-> Student demo
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
 
     useEffect(() => {
         if (user) {
             fetchMessages();
         }
     }, [user]);
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
     const fetchMessages = async () => {
         if (!user) return;
@@ -73,33 +82,36 @@ export default function MessagesPage() {
                 <h2 className="text-lg font-semibold">Chat with School</h2>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col-reverse gap-4">
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
                 {loading ? (
                     <div className="text-center text-muted-foreground">Loading messages...</div>
                 ) : messages.length === 0 ? (
                     <div className="text-center text-muted-foreground">No messages yet. Say hello!</div>
                 ) : (
-                    messages.map((msg) => {
-                        const isMe = msg.senderId === user?.id;
-                        return (
-                            <div
-                                key={msg.id}
-                                className={`flex ${isMe ? "justify-end" : "justify-start"}`}
-                            >
+                    <>
+                        {messages.map((msg) => {
+                            const isMe = msg.senderId === user?.id;
+                            return (
                                 <div
-                                    className={`max-w-[70%] rounded-lg px-4 py-3 ${isMe
-                                        ? "bg-primary text-primary-foreground"
-                                        : "bg-muted text-foreground"
-                                        }`}
+                                    key={msg.id}
+                                    className={`flex ${isMe ? "justify-end" : "justify-start"}`}
                                 >
-                                    <p>{msg.content}</p>
-                                    <p className={`mt-1 text-xs ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </p>
+                                    <div
+                                        className={`max-w-[70%] rounded-lg px-4 py-3 ${isMe
+                                            ? "bg-primary text-primary-foreground"
+                                            : "bg-muted text-foreground"
+                                            }`}
+                                    >
+                                        <p>{msg.content}</p>
+                                        <p className={`mt-1 text-xs ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })
+                            );
+                        })}
+                        <div ref={messagesEndRef} />
+                    </>
                 )}
             </div>
 
