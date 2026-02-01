@@ -1,12 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// In-memory fallback
-let MOCK_MESSAGES: any[] = [
-    { id: '1', senderId: 'ADMIN-01', receiverId: 'ST-001', content: 'Welcome to the school!', createdAt: new Date().toISOString(), read: false },
-    { id: '2', senderId: 'ST-001', receiverId: 'ADMIN-01', content: 'Thank you!', createdAt: new Date().toISOString(), read: true }
-];
-
 // Get messages for a specific user (either sent by them or received by them)
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -15,7 +9,6 @@ export async function GET(request: Request) {
     if (!userId) {
         return NextResponse.json({ error: 'UserId required' }, { status: 400 });
     }
-
 
     try {
         const messages = await prisma.message.findMany({
@@ -30,13 +23,12 @@ export async function GET(request: Request) {
             },
         });
         return NextResponse.json(messages);
-    } catch (error) {
-        console.error('DB Error, using fallback:', error);
-        // Fallback
-        const userMessages = MOCK_MESSAGES
-            .filter(m => m.senderId === userId || m.receiverId === userId)
-            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        return NextResponse.json(userMessages);
+    } catch (error: any) {
+        console.error('GET /api/messages DB Error:', error);
+        return NextResponse.json(
+            { error: 'Failed to fetch messages', details: error.message },
+            { status: 500 }
+        );
     }
 }
 
