@@ -30,7 +30,11 @@ export async function GET() {
         return NextResponse.json({
             status: 'success',
             time: res.rows[0].time,
-            driver: 'node-postgres'
+            driver: 'node-postgres',
+            debugConfig: {
+                maskedUrl: url.replace(/:[^:]*@/, ':****@'),
+                length: url.length
+            }
         });
     } catch (e: any) {
         const maskedUrl = url.replace(/:[^:]*@/, ':****@');
