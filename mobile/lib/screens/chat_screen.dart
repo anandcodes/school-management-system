@@ -61,8 +61,19 @@ class _ChatScreenState extends State<ChatScreen> {
       _loadMessages(); // Refresh
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to send: $e")),
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text("Failed to Send"),
+            content: Text(
+                "Server Error: $e\n\nPlease check your internet connection or server status."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text("OK"),
+              ),
+            ],
+          ),
         );
       }
     }
