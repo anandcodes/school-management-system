@@ -35,15 +35,9 @@ class _ChatScreenState extends State<ChatScreen> {
     // Hardcoding 'Admin' (ID '1') as the other party for demo simple chat
     final msgs = await DataService().getMessages(_currentUserId);
     setState(() {
-      _messages = msgs;
+      _messages = msgs.reversed
+          .toList(); // Reverse for standard chat view (Newest at Bottom w/ reverse:true)
       _isLoading = false;
-    });
-
-    // Auto-scroll to bottom after frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      }
     });
   }
 
@@ -90,7 +84,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     controller: _scrollController,
-                    reverse: false,
+                    reverse: true, // Standard Chat Behavior
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
