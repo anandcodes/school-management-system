@@ -15,8 +15,10 @@ class DataService {
 
   DataService._internal() {
     // Production Vercel URL
+    // NOTE: Ensure "Deployment Protection" is DISABLED in Vercel Project Settings > Deployment Protection
+    // otherwise the app will get 401 Unauthorized errors.
     const String baseUrl =
-        "https://school-management-system-nq433pbvo-anandcodes-projects.vercel.app";
+        "https://school-management-system-anandcodes-projects.vercel.app";
     _apiService = ApiService(baseUrl: baseUrl);
   }
 
