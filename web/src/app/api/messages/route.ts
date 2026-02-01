@@ -62,19 +62,15 @@ export async function POST(request: Request) {
                 },
             });
             return NextResponse.json(message);
-        } catch (dbError) {
-            console.error('DB Error, using fallback:', dbError);
-            // Fallback
-            const newMessage = {
-                id: Date.now().toString(),
-                senderId: body.senderId,
-                receiverId: body.receiverId,
-                content: body.content,
-                createdAt: new Date().toISOString(),
-                read: false
-            };
-            MOCK_MESSAGES.unshift(newMessage);
-            return NextResponse.json(newMessage);
+        } catch (dbError: any) {
+            console.error('DB Error - Failed to save message:', dbError);
+            return NextResponse.json(
+                {
+                    error: 'Database connection failed',
+                    details: dbError.message
+                },
+                { status: 500 }
+            );
         }
 
     } catch (error) {
