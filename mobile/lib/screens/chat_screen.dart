@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/data_service.dart';
 import '../models/new_models.dart';
 import '../providers/auth_provider.dart'; // Correct provider
+import 'dart:async';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -17,11 +18,25 @@ class _ChatScreenState extends State<ChatScreen> {
   List<Message> _messages = [];
   bool _isLoading = true;
   String _currentUserId = '';
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadUserAndMessages();
+
+    // Auto-refresh every 3 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      _loadMessages();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserAndMessages() async {

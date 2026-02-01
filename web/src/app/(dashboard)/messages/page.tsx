@@ -31,6 +31,13 @@ export default function MessagesPage() {
     useEffect(() => {
         if (user) {
             fetchMessages();
+
+            // Auto-refresh every 3 seconds for real-time feel
+            const interval = setInterval(() => {
+                fetchMessages();
+            }, 3000);
+
+            return () => clearInterval(interval);
         }
     }, [user]);
 
