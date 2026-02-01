@@ -14,10 +14,9 @@ class DataService {
   late final ApiService _apiService;
 
   DataService._internal() {
-    // TODO: REPLACE THIS URL with your actual Vercel Deployment URL for the live app
-    // Example: "https://school-management-system-ten.vercel.app"
-    // For Android Emulator (Local): "http://10.0.2.2:3000" or your LAN IP "http://192.168.1.4:3000"
-    const String baseUrl = "http://192.168.1.4:3000"; // Local testing
+    // Production Vercel URL
+    const String baseUrl =
+        "https://school-management-system-nq433pbvo-anandcodes-projects.vercel.app";
     _apiService = ApiService(baseUrl: baseUrl);
   }
 

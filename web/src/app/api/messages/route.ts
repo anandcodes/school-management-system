@@ -44,6 +44,13 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
 
+        if (!body || !body.senderId || !body.receiverId || !body.content) {
+            console.error('Invalid message payload:', body);
+            return NextResponse.json(
+                { error: 'Missing required fields: senderId, receiverId, content' },
+                { status: 400 }
+            );
+        }
 
         try {
             // Try DB first
@@ -70,8 +77,8 @@ export async function POST(request: Request) {
             return NextResponse.json(newMessage);
         }
 
-
     } catch (error) {
+        console.error('POST /api/messages Error:', error);
         return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });
     }
 }
