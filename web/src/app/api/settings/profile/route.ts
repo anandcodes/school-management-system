@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/backend/db';
+import { User } from '@/backend/models';
 
 export async function PUT(request: Request) {
     try {
+        await dbConnect();
         const body = await request.json();
         const { userId, name, email, bio } = body;
 
@@ -25,14 +27,15 @@ export async function PUT(request: Request) {
         }
 
         // Update actual user in database
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: {
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {
                 name: name || undefined,
                 email: email || undefined,
                 // bio field might not exist in schema, add if needed
             },
-        });
+            { new: true }
+        ).lean();
 
         // Remove password from response
         const { password, ...userWithoutPassword } = updatedUser as any;
@@ -40,7 +43,7 @@ export async function PUT(request: Request) {
         return NextResponse.json({
             success: true,
             message: 'Profile updated successfully',
-            user: userWithoutPassword,
+            user: { ...userWithoutPassword, id: (updatedUser as any)._id.toString() },
         });
     } catch (error: any) {
         console.error('Profile update error:', error);

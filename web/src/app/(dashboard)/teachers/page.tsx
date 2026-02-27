@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { Plus, Mail, MoreVertical, Search, Edit2, Trash2, X } from "lucide-react";
 import { Teacher } from "@/lib/types";
 import { api } from "@/services/api";
-import { Modal } from "@/components/Modal";
+import { Modal } from "@/components/ui/Modal";
 import { AddTeacherForm } from "@/components/forms/AddTeacherForm";
 import { toast } from "sonner";
-import { Pagination } from "@/components/Pagination";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function TeachersPage() {
     const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -72,7 +72,7 @@ export default function TeachersPage() {
     const handleEditTeacher = async (updatedData: Omit<Teacher, "id"> | Partial<Teacher>) => {
         if (!editingTeacher) return;
         try {
-            await api.updateTeacher(editingTeacher.id, updatedData as Partial<Teacher>);
+            await api.updateTeacher(String(editingTeacher.id), updatedData as Partial<Teacher>);
             toast.success("Teacher updated successfully!");
             setIsEditOpen(false);
             setEditingTeacher(null);
@@ -154,12 +154,12 @@ export default function TeachersPage() {
                         <div key={teacher.id} className="group relative rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
                             <div className="absolute top-4 right-4">
                                 <button
-                                    onClick={() => setOpenMenuId(openMenuId === teacher.id ? null : teacher.id)}
+                                    onClick={() => setOpenMenuId(openMenuId === String(teacher.id) ? null : String(teacher.id))}
                                     className="p-1 rounded-md text-muted-foreground hover:bg-muted transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                                 >
                                     <MoreVertical className="h-4 w-4" />
                                 </button>
-                                {openMenuId === teacher.id && (
+                                {openMenuId === String(teacher.id) && (
                                     <div className="absolute right-0 top-8 w-32 rounded-md border border-border bg-popover shadow-md z-10 animate-in fade-in zoom-in-95 duration-200">
                                         <button
                                             onClick={() => openEditModal(teacher)}
@@ -168,7 +168,7 @@ export default function TeachersPage() {
                                             <Edit2 className="h-3 w-3" /> Edit
                                         </button>
                                         <button
-                                            onClick={() => handleDeleteTeacher(teacher.id)}
+                                            onClick={() => handleDeleteTeacher(String(teacher.id))}
                                             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-left"
                                         >
                                             <Trash2 className="h-3 w-3" /> Delete

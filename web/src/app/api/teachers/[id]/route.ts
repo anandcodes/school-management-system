@@ -1,25 +1,29 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/backend/db';
+import { Teacher, SchoolClass, ScheduleEvent } from '@/backend/models';
 
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        await dbConnect();
         const { id } = await params;
-        const teacher = await prisma.teacher.findUnique({
-            where: { id },
-            include: {
-                classes: true,
-                events: true,
-            },
-        });
+        const teacher = await Teacher.findById(id).lean();
 
         if (!teacher) {
             return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
         }
 
-        return NextResponse.json(teacher);
+        const classes = await SchoolClass.find({ teacherId: id }).lean();
+        const events = await ScheduleEvent.find({ teacherId: id }).lean();
+
+        return NextResponse.json({
+            ...teacher,
+            id: (teacher as any)._id.toString(),
+            classes: classes.map((c: any) => ({ ...c, id: c._id.toString() })),
+            events: events.map((e: any) => ({ ...e, id: e._id.toString() })),
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch teacher' }, { status: 500 });
     }
@@ -30,20 +34,22 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        await dbConnect();
         const { id } = await params;
         const body = await request.json();
 
-        const teacher = await prisma.teacher.update({
-            where: { id },
-            data: {
+        const teacher = await Teacher.findByIdAndUpdate(
+            id,
+            {
                 name: body.name,
                 email: body.email,
                 subject: body.subject,
                 avatar: body.avatar || null,
             },
-        });
+            { new: true }
+        ).lean();
 
-        return NextResponse.json(teacher);
+        return NextResponse.json({ ...teacher, id: (teacher as any)._id.toString() });
     } catch (error: any) {
         console.error('Teacher update error:', error);
         return NextResponse.json(
@@ -58,23 +64,20 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        await dbConnect();
         const { id } = await params;
 
         // Delete related schedule events
-        await prisma.scheduleEvent.deleteMany({
-            where: { teacherId: id },
-        });
+        await ScheduleEvent.deleteMany({ teacherId: id });
 
-        // Unlink classes (set teacherId to null instead of deleting)
-        await prisma.schoolClass.updateMany({
-            where: { teacherId: id },
-            data: { teacherId: null },
-        });
+        // Unlink classes (unset teacherId)
+        await SchoolClass.updateMany(
+            { teacherId: id },
+            { $unset: { teacherId: 1 } }
+        );
 
         // Now delete the teacher
-        await prisma.teacher.delete({
-            where: { id },
-        });
+        await Teacher.findByIdAndDelete(id);
 
         return NextResponse.json({ success: true, message: 'Teacher deleted successfully' });
     } catch (error: any) {

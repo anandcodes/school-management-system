@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/backend/db';
+import { SchoolClass, Teacher, Student } from '@/backend/models';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -8,41 +9,52 @@ export async function GET(request: Request) {
     const search = searchParams.get('search');
 
     try {
+        await dbConnect();
+
         if (pageParam && limitParam) {
             const page = parseInt(pageParam);
             const limit = parseInt(limitParam);
             const skip = (page - 1) * limit;
 
-            const where: any = {};
+            const filter: any = {};
             if (search) {
-                where.OR = [
-                    { name: { contains: search, mode: 'insensitive' } },
-                    { grade: { contains: search, mode: 'insensitive' } },
-                    { teacher: { name: { contains: search, mode: 'insensitive' } } },
+                // For teacher name search, first find matching teacher IDs
+                const matchingTeachers = await Teacher.find({
+                    name: { $regex: search, $options: 'i' },
+                }).select('_id').lean();
+                const teacherIds = matchingTeachers.map((t: any) => t._id);
+
+                filter.$or = [
+                    { name: { $regex: search, $options: 'i' } },
+                    { grade: { $regex: search, $options: 'i' } },
+                    { teacherId: { $in: teacherIds } },
                 ];
             }
 
-            const [classes, total] = await prisma.$transaction([
-                prisma.schoolClass.findMany({
-                    skip,
-                    take: limit,
-                    where,
-                    include: {
-                        teacher: true,
-                        _count: {
-                            select: { students: true },
-                        },
-                    },
-                    orderBy: { createdAt: 'desc' as any },
-                }),
-                prisma.schoolClass.count({ where }),
+            const [classes, total] = await Promise.all([
+                SchoolClass.find(filter)
+                    .sort({ createdAt: -1 })
+                    .skip(skip)
+                    .limit(limit)
+                    .lean(),
+                SchoolClass.countDocuments(filter),
             ]);
 
-            const formattedClasses = classes.map((cls: any) => ({
-                ...cls,
-                studentsCount: cls._count.students,
-                teacherName: cls.teacher?.name || 'Unassigned',
-            }));
+            const formattedClasses = await Promise.all(
+                classes.map(async (cls: any) => {
+                    const teacher = cls.teacherId
+                        ? await Teacher.findById(cls.teacherId).lean()
+                        : null;
+                    const studentsCount = await Student.countDocuments({ classId: cls._id });
+                    return {
+                        ...cls,
+                        id: cls._id.toString(),
+                        teacher: teacher ? { ...teacher, id: (teacher as any)._id.toString() } : null,
+                        studentsCount,
+                        teacherName: teacher ? (teacher as any).name : 'Unassigned',
+                    };
+                })
+            );
 
             return NextResponse.json({
                 data: formattedClasses,
@@ -54,21 +66,25 @@ export async function GET(request: Request) {
                 },
             });
         } else {
-            const classes = await prisma.schoolClass.findMany({
-                include: {
-                    teacher: true,
-                    _count: {
-                        select: { students: true },
-                    },
-                },
-                orderBy: { createdAt: 'desc' as any },
-            });
+            const classes = await SchoolClass.find()
+                .sort({ createdAt: -1 })
+                .lean();
 
-            const formattedClasses = classes.map((cls: any) => ({
-                ...cls,
-                studentsCount: cls._count.students,
-                teacherName: cls.teacher?.name || 'Unassigned',
-            }));
+            const formattedClasses = await Promise.all(
+                classes.map(async (cls: any) => {
+                    const teacher = cls.teacherId
+                        ? await Teacher.findById(cls.teacherId).lean()
+                        : null;
+                    const studentsCount = await Student.countDocuments({ classId: cls._id });
+                    return {
+                        ...cls,
+                        id: cls._id.toString(),
+                        teacher: teacher ? { ...teacher, id: (teacher as any)._id.toString() } : null,
+                        studentsCount,
+                        teacherName: teacher ? (teacher as any).name : 'Unassigned',
+                    };
+                })
+            );
 
             return NextResponse.json(formattedClasses);
         }
@@ -80,19 +96,18 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        await dbConnect();
         const body = await request.json();
-        const newClass = await prisma.schoolClass.create({
-            data: {
-                name: body.name,
-                grade: body.grade,
-                teacherId: body.teacherId,
-                time: body.time,
-                days: body.days,
-                room: body.room,
-                color: body.color,
-            },
+        const newClass = await SchoolClass.create({
+            name: body.name,
+            grade: body.grade,
+            teacherId: body.teacherId,
+            time: body.time,
+            days: body.days,
+            room: body.room,
+            color: body.color,
         });
-        return NextResponse.json(newClass);
+        return NextResponse.json({ ...newClass.toObject(), id: newClass._id.toString() });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to create class' }, { status: 500 });
     }

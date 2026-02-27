@@ -1,37 +1,33 @@
-
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/backend/db';
+import { User, Message } from '@/backend/models';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
         console.log("Debug: Starting DB Check...");
+        await dbConnect();
 
         // 1. Check User Count
-        const userCount = await prisma.user.count();
+        const userCount = await User.countDocuments();
         console.log("Debug: User count:", userCount);
 
         // 2. Try to write a dummy log
-        // We reused 'Message' or 'Notification' for a write test implies side effects, 
-        // but 'user.count' is a good read test. 
-        // Let's create a dummy message to test WRITE permission
-        const testMessage = await prisma.message.create({
-            data: {
-                senderId: 'DEBUG',
-                receiverId: 'DEBUG',
-                content: 'Debug Connection Test ' + new Date().toISOString()
-            }
+        const testMessage = await Message.create({
+            senderId: 'DEBUG',
+            receiverId: 'DEBUG',
+            content: 'Debug Connection Test ' + new Date().toISOString()
         });
 
         // 3. Clean it up
-        await prisma.message.delete({ where: { id: testMessage.id } });
+        await Message.findByIdAndDelete(testMessage._id);
 
         return NextResponse.json({
             status: 'ok',
-            databaseUrlRef: process.env.DATABASE_URL ? 'Defined' : 'UNDEFINED',
+            databaseUrlRef: process.env.MONGODB_URI ? 'Defined' : 'UNDEFINED',
             config: {
-                host: process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'Unknown',
+                host: process.env.MONGODB_URI?.split('@')[1]?.split('/')[0] || 'Unknown',
             },
             userCount,
             writeTest: 'Success',
@@ -45,7 +41,7 @@ export async function GET() {
             message: error.message,
             stack: error.stack,
             type: error.constructor.name,
-            databaseUrlRef: process.env.DATABASE_URL ? 'Defined (Hidden)' : 'UNDEFINED',
+            databaseUrlRef: process.env.MONGODB_URI ? 'Defined (Hidden)' : 'UNDEFINED',
         }, { status: 500 });
     }
 }

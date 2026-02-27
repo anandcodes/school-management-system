@@ -1,46 +1,41 @@
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const MONGODB_URI = process.env.DATABASE_URL || 'mongodb://localhost:27017/school_management';
+
+const UserSchema = new mongoose.Schema({
+    name: String,
+    email: { type: String, unique: true },
+    password: String,
+    role: String,
+    avatar: String,
+}, { timestamps: true });
+
+const User = mongoose.model('User', UserSchema);
 
 async function main() {
-    const email = 'student@school.edu'; // Using .edu to match Mobile App default
-    console.log(`Creating/Updating student user: ${email}...`);
+    await mongoose.connect(MONGODB_URI);
+    console.log('Connected to MongoDB');
 
-    // First, check if ST-001 exists with .com
-    const existingCom = await prisma.user.findUnique({ where: { email: 'student@school.com' } });
-    if (existingCom) {
-        console.log("Found .com user, updating to .edu...");
-        await prisma.user.update({
-            where: { email: 'student@school.com' },
-            data: { email: 'student@school.edu' }
-        });
-    } else {
-        // Upsert directly
-        await prisma.user.upsert({
-            where: { email },
-            update: {
-                role: 'STUDENT',
-                id: 'ST-001'
-            },
-            create: {
-                id: 'ST-001',
-                email,
-                name: 'Student User',
-                password: 'student', // Plain text matching app
-                role: 'STUDENT',
-                avatar: 'https://github.com/shadcn.png',
-            },
-        });
-    }
+    // Seed admin user
+    const adminPass = await bcrypt.hash('admin', 10);
+    await User.findOneAndUpdate(
+        { email: 'admin@school.com' },
+        { name: 'Admin User', email: 'admin@school.com', password: adminPass, role: 'ADMIN' },
+        { upsert: true, new: true }
+    );
+    console.log('Admin User Ready (admin@school.com / admin)');
 
-    console.log("Student User Ready (student@school.edu / student).");
+    // Seed student user
+    const studentPass = await bcrypt.hash('student', 10);
+    await User.findOneAndUpdate(
+        { email: 'student@school.edu' },
+        { name: 'Student User', email: 'student@school.edu', password: studentPass, role: 'STUDENT' },
+        { upsert: true, new: true }
+    );
+    console.log('Student User Ready (student@school.edu / student)');
 }
 
 main()
-    .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+    .catch(console.error)
+    .finally(() => mongoose.disconnect());

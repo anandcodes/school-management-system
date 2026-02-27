@@ -5,7 +5,7 @@ import { CheckCircle, Clock, AlertTriangle, DollarSign, Search, X } from "lucide
 import { FeeRecord } from "@/lib/types";
 import { api } from "@/services/api";
 import { toast } from "sonner";
-import { Pagination } from "@/components/Pagination";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function FeesPage() {
     const [fees, setFees] = useState<FeeRecord[]>([]);

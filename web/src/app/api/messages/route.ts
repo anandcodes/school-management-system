@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/backend/db';
+import { Message } from '@/backend/models';
 
 // Get messages for a specific user (either sent by them or received by them)
 export async function GET(request: Request) {
@@ -11,18 +12,18 @@ export async function GET(request: Request) {
     }
 
     try {
-        const messages = await prisma.message.findMany({
-            where: {
-                OR: [
-                    { senderId: userId },
-                    { receiverId: userId },
-                ],
-            },
-            orderBy: {
-                createdAt: 'asc',
-            },
-        });
-        return NextResponse.json(messages);
+        await dbConnect();
+        const messages = await Message.find({
+            $or: [
+                { senderId: userId },
+                { receiverId: userId },
+            ],
+        })
+            .sort({ createdAt: 1 })
+            .lean();
+
+        const formatted = messages.map((m: any) => ({ ...m, id: m._id.toString() }));
+        return NextResponse.json(formatted);
     } catch (error: any) {
         console.error('GET /api/messages DB Error:', error);
         return NextResponse.json(
@@ -45,15 +46,14 @@ export async function POST(request: Request) {
         }
 
         try {
+            await dbConnect();
             // Try DB first
-            const message = await prisma.message.create({
-                data: {
-                    senderId: body.senderId,
-                    receiverId: body.receiverId,
-                    content: body.content,
-                },
+            const message = await Message.create({
+                senderId: body.senderId,
+                receiverId: body.receiverId,
+                content: body.content,
             });
-            return NextResponse.json(message);
+            return NextResponse.json({ ...message.toObject(), id: message._id.toString() });
         } catch (dbError: any) {
             console.error('DB Error - Failed to save message:', dbError);
             return NextResponse.json(

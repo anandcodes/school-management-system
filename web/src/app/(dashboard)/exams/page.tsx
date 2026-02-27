@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Search, Filter, BookOpen, User, Calendar, X, Plus } from "lucide-react";
 import { Exam } from "@/lib/types";
 import { api } from "@/services/api";
-import { Pagination } from "@/components/Pagination";
+import { Pagination } from "@/components/ui/Pagination";
 import { toast } from "sonner"; // Assuming sonner is available
 
 export default function ExamsPage() {

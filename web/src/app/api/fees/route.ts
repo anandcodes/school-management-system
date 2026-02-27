@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/backend/db';
+import { FeeRecord, Student } from '@/backend/models';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -9,34 +10,43 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
 
     try {
+        await dbConnect();
+
         if (pageParam && limitParam) {
             const page = parseInt(pageParam);
             const limit = parseInt(limitParam);
             const skip = (page - 1) * limit;
 
-            const where: any = {};
+            const filter: any = {};
+
             if (search) {
-                where.student = { name: { contains: search, mode: 'insensitive' } };
+                // Find students matching the search, then filter fees by those student IDs
+                const matchingStudents = await Student.find({
+                    name: { $regex: search, $options: 'i' },
+                }).select('_id').lean();
+                const studentIds = matchingStudents.map((s: any) => s._id);
+                filter.studentId = { $in: studentIds };
             }
             if (status && status !== 'All') {
-                where.status = status;
+                filter.status = status;
             }
 
-            const [fees, total] = await prisma.$transaction([
-                prisma.feeRecord.findMany({
-                    skip,
-                    take: limit,
-                    where,
-                    include: { student: true },
-                    orderBy: { dueDate: 'asc' },
-                }),
-                prisma.feeRecord.count({ where }),
+            const [fees, total] = await Promise.all([
+                FeeRecord.find(filter)
+                    .populate('studentId')
+                    .sort({ dueDate: 1 })
+                    .skip(skip)
+                    .limit(limit)
+                    .lean(),
+                FeeRecord.countDocuments(filter),
             ]);
 
-            const formattedFees = fees.map(fee => ({
+            const formattedFees = fees.map((fee: any) => ({
                 ...fee,
-                studentName: fee.student.name,
-                dueDate: fee.dueDate.toISOString().split('T')[0],
+                id: fee._id.toString(),
+                student: fee.studentId || null,
+                studentName: fee.studentId?.name || '',
+                dueDate: fee.dueDate ? new Date(fee.dueDate).toISOString().split('T')[0] : '',
             }));
 
             return NextResponse.json({
@@ -49,19 +59,17 @@ export async function GET(request: Request) {
                 },
             });
         } else {
-            const fees = await prisma.feeRecord.findMany({
-                include: {
-                    student: true,
-                },
-                orderBy: {
-                    dueDate: 'asc',
-                },
-            });
+            const fees = await FeeRecord.find()
+                .populate('studentId')
+                .sort({ dueDate: 1 })
+                .lean();
 
-            const formattedFees = fees.map(fee => ({
+            const formattedFees = fees.map((fee: any) => ({
                 ...fee,
-                studentName: fee.student.name,
-                dueDate: fee.dueDate.toISOString().split('T')[0],
+                id: fee._id.toString(),
+                student: fee.studentId || null,
+                studentName: fee.studentId?.name || '',
+                dueDate: fee.dueDate ? new Date(fee.dueDate).toISOString().split('T')[0] : '',
             }));
 
             return NextResponse.json(formattedFees);

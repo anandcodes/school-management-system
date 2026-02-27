@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/backend/db';
+import { Exam, SchoolClass } from '@/backend/models';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -8,32 +9,39 @@ export async function GET(request: Request) {
     const search = searchParams.get('search');
 
     try {
+        await dbConnect();
+
         if (pageParam && limitParam) {
             const page = parseInt(pageParam);
             const limit = parseInt(limitParam);
             const skip = (page - 1) * limit;
 
-            const where: any = {};
+            const filter: any = {};
             if (search) {
-                where.OR = [
-                    { title: { contains: search, mode: 'insensitive' } },
-                    { subject: { contains: search, mode: 'insensitive' } },
+                filter.$or = [
+                    { title: { $regex: search, $options: 'i' } },
+                    { subject: { $regex: search, $options: 'i' } },
                 ];
             }
 
-            const [exams, total] = await prisma.$transaction([
-                prisma.exam.findMany({
-                    skip,
-                    take: limit,
-                    where,
-                    include: { class: true },
-                    orderBy: { date: 'desc' },
-                }),
-                prisma.exam.count({ where }),
+            const [exams, total] = await Promise.all([
+                Exam.find(filter)
+                    .populate('classId')
+                    .sort({ date: -1 })
+                    .skip(skip)
+                    .limit(limit)
+                    .lean(),
+                Exam.countDocuments(filter),
             ]);
 
+            const formatted = exams.map((e: any) => ({
+                ...e,
+                id: e._id.toString(),
+                class: e.classId || null,
+            }));
+
             return NextResponse.json({
-                data: exams,
+                data: formatted,
                 meta: {
                     total,
                     page,
@@ -42,15 +50,18 @@ export async function GET(request: Request) {
                 },
             });
         } else {
-            const exams = await prisma.exam.findMany({
-                include: {
-                    class: true,
-                },
-                orderBy: {
-                    date: 'desc',
-                },
-            });
-            return NextResponse.json(exams);
+            const exams = await Exam.find()
+                .populate('classId')
+                .sort({ date: -1 })
+                .lean();
+
+            const formatted = exams.map((e: any) => ({
+                ...e,
+                id: e._id.toString(),
+                class: e.classId || null,
+            }));
+
+            return NextResponse.json(formatted);
         }
     } catch (error) {
         console.error("Failed to fetch exams:", error);
@@ -60,17 +71,16 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        await dbConnect();
         const body = await request.json();
-        const exam = await prisma.exam.create({
-            data: {
-                title: body.title,
-                subject: body.subject,
-                date: new Date(body.date),
-                totalMarks: body.totalMarks,
-                classId: body.classId,
-            },
+        const exam = await Exam.create({
+            title: body.title,
+            subject: body.subject,
+            date: new Date(body.date),
+            totalMarks: body.totalMarks,
+            classId: body.classId,
         });
-        return NextResponse.json(exam);
+        return NextResponse.json({ ...exam.toObject(), id: exam._id.toString() });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to create exam' }, { status: 500 });
     }

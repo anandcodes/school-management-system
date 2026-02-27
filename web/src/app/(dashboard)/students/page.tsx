@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Plus, Filter, MoreVertical, Edit2, Trash2, Mail, X } from "lucide-react";
+import { Search, Plus, Filter, MoreVertical, Edit2, Trash2, X } from "lucide-react";
 import { Student } from "@/lib/types";
 import { api } from "@/services/api";
-import { Modal } from "@/components/Modal";
+import { Modal } from "@/components/ui/Modal";
 import { AddStudentForm } from "@/components/forms/AddStudentForm";
 import { toast } from "sonner";
-import { Pagination } from "@/components/Pagination";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function StudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
@@ -215,7 +215,7 @@ export default function StudentsPage() {
                                     </div>
                                     <div className="flex flex-col items-center p-2 rounded-lg bg-muted/50">
                                         <span className="text-muted-foreground text-xs">Class</span>
-                                        <span className="font-medium">{student.classId || "N/A"}</span>
+                                        <span className="font-medium">{student.classMatch || "N/A"}</span>
                                     </div>
                                 </div>
                             </div>
@@ -235,13 +235,13 @@ export default function StudentsPage() {
             )}
 
             <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Add New Student">
-                <AddStudentForm onSuccess={handleAddSuccess} onCancel={() => setIsAddOpen(false)} />
+                <AddStudentForm onSubmit={handleAddSuccess} onCancel={() => setIsAddOpen(false)} />
             </Modal>
 
             <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Student">
                 <AddStudentForm
                     initialData={editingStudent}
-                    onSuccess={handleEditSubmit}
+                    onSubmit={handleEditSubmit}
                     onCancel={() => setIsEditOpen(false)}
                 />
             </Modal>

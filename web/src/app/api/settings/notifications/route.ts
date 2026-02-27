@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/backend/db';
+import { User } from '@/backend/models';
 
 export async function PUT(request: Request) {
     try {
+        await dbConnect();
         const body = await request.json();
         const { userId, notifications } = body;
 
@@ -20,17 +22,17 @@ export async function PUT(request: Request) {
         }
 
         // Since User model might not have notification fields, we'll store as JSON
-        // You can extend the User model in Prisma schema to add these fields properly
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: {
+        // You can extend the User model in Mongoose schema to add these fields properly
+        await User.findByIdAndUpdate(
+            userId,
+            {
                 // If you have notification fields in schema, update them here:
                 // emailNotifications: notifications.email,
                 // pushNotifications: notifications.push,
                 // weeklyReports: notifications.weeklyReports,
                 // studentAlerts: notifications.studentAlerts,
-            },
-        });
+            }
+        );
 
         return NextResponse.json({
             success: true,

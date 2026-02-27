@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/backend/db';
+import { AttendanceRecord } from '@/backend/models';
 
 export async function POST(request: Request) {
     try {
+        await dbConnect();
         const body = await request.json();
         // body expected: { classId, date, attendance: [{ studentId, status, remarks? }] }
 
@@ -28,37 +30,39 @@ export async function POST(request: Request) {
             }
 
             // Check if record for this student on this date already exists
-            const existing = await prisma.attendanceRecord.findFirst({
-                where: {
-                    studentId,
-                    date: {
-                        gte: new Date(attendanceDate.setHours(0, 0, 0, 0)),
-                        lt: new Date(attendanceDate.setHours(23, 59, 59, 999)),
-                    },
+            const dayStart = new Date(attendanceDate);
+            dayStart.setHours(0, 0, 0, 0);
+            const dayEnd = new Date(attendanceDate);
+            dayEnd.setHours(23, 59, 59, 999);
+
+            const existing = await AttendanceRecord.findOne({
+                studentId,
+                date: {
+                    $gte: dayStart,
+                    $lt: dayEnd,
                 },
             });
 
             if (existing) {
                 // Update existing record
-                const updated = await prisma.attendanceRecord.update({
-                    where: { id: existing.id },
-                    data: {
+                const updated = await AttendanceRecord.findByIdAndUpdate(
+                    existing._id,
+                    {
                         status: status.toUpperCase(),
                         remarks: remarks || null,
                     },
-                });
-                createdRecords.push(updated);
+                    { new: true }
+                ).lean();
+                createdRecords.push({ ...updated, id: (updated as any)._id.toString() });
             } else {
                 // Create new record
-                const created = await prisma.attendanceRecord.create({
-                    data: {
-                        studentId,
-                        status: status.toUpperCase(),
-                        date: new Date(date),
-                        remarks: remarks || null,
-                    },
+                const created = await AttendanceRecord.create({
+                    studentId,
+                    status: status.toUpperCase(),
+                    date: new Date(date),
+                    remarks: remarks || null,
                 });
-                createdRecords.push(created);
+                createdRecords.push({ ...created.toObject(), id: created._id.toString() });
             }
         }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { comparePassword } from '@/lib/password';
+import dbConnect from '@/backend/db';
+import { User } from '@/backend/models';
+import { comparePassword } from '@/backend/utils/password';
 
 export async function POST(request: Request) {
     try {
@@ -14,20 +15,19 @@ export async function POST(request: Request) {
         let user = null;
 
         try {
-            user = await prisma.user.findUnique({
-                where: { email },
-            });
+            await dbConnect();
+            user = await User.findOne({ email }).lean();
         } catch (dbError) {
             console.error("DB Login Error (checking fallback):", dbError);
         }
 
         // Check database user with hashed password
         if (user) {
-            const isPasswordValid = await comparePassword(password, user.password);
+            const isPasswordValid = await comparePassword(password, (user as any).password);
             if (isPasswordValid) {
                 // Return user info without password
-                const { password: _, ...userWithoutPassword } = user;
-                return NextResponse.json(userWithoutPassword);
+                const { password: _, ...userWithoutPassword } = user as any;
+                return NextResponse.json({ ...userWithoutPassword, id: (user as any)._id.toString() });
             }
         }
 

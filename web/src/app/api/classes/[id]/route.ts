@@ -1,26 +1,33 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/backend/db';
+import { SchoolClass, Teacher, Student, Exam, ExamResult } from '@/backend/models';
 
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        await dbConnect();
         const { id } = await params;
-        const schoolClass = await prisma.schoolClass.findUnique({
-            where: { id },
-            include: {
-                teacher: true,
-                students: true,
-                exams: true,
-            },
-        });
+        const schoolClass = await SchoolClass.findById(id).lean();
 
         if (!schoolClass) {
             return NextResponse.json({ error: 'Class not found' }, { status: 404 });
         }
 
-        return NextResponse.json(schoolClass);
+        const teacher = (schoolClass as any).teacherId
+            ? await Teacher.findById((schoolClass as any).teacherId).lean()
+            : null;
+        const students = await Student.find({ classId: id }).lean();
+        const exams = await Exam.find({ classId: id }).lean();
+
+        return NextResponse.json({
+            ...schoolClass,
+            id: (schoolClass as any)._id.toString(),
+            teacher: teacher ? { ...teacher, id: (teacher as any)._id.toString() } : null,
+            students: students.map((s: any) => ({ ...s, id: s._id.toString() })),
+            exams: exams.map((e: any) => ({ ...e, id: e._id.toString() })),
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch class' }, { status: 500 });
     }
@@ -31,12 +38,13 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        await dbConnect();
         const { id } = await params;
         const body = await request.json();
 
-        const schoolClass = await prisma.schoolClass.update({
-            where: { id },
-            data: {
+        const schoolClass = await SchoolClass.findByIdAndUpdate(
+            id,
+            {
                 name: body.name,
                 grade: body.grade,
                 teacherId: body.teacherId || null,
@@ -45,9 +53,10 @@ export async function PUT(
                 room: body.room || null,
                 color: body.color || null,
             },
-        });
+            { new: true }
+        ).lean();
 
-        return NextResponse.json(schoolClass);
+        return NextResponse.json({ ...schoolClass, id: (schoolClass as any)._id.toString() });
     } catch (error: any) {
         console.error('Class update error:', error);
         return NextResponse.json(
@@ -62,33 +71,26 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        await dbConnect();
         const { id } = await params;
 
         // Delete related exams and their results
-        const exams = await prisma.exam.findMany({
-            where: { classId: id },
-        });
+        const exams = await Exam.find({ classId: id }).lean();
 
         for (const exam of exams) {
-            await prisma.examResult.deleteMany({
-                where: { examId: exam.id },
-            });
+            await ExamResult.deleteMany({ examId: (exam as any)._id });
         }
 
-        await prisma.exam.deleteMany({
-            where: { classId: id },
-        });
+        await Exam.deleteMany({ classId: id });
 
         // Unlink students (set classId to null)
-        await prisma.student.updateMany({
-            where: { classId: id },
-            data: { classId: null },
-        });
+        await Student.updateMany(
+            { classId: id },
+            { $unset: { classId: 1 } }
+        );
 
         // Now delete the class
-        await prisma.schoolClass.delete({
-            where: { id },
-        });
+        await SchoolClass.findByIdAndDelete(id);
 
         return NextResponse.json({ success: true, message: 'Class deleted successfully' });
     } catch (error: any) {

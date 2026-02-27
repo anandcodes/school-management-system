@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { hashPassword, comparePassword, validatePassword } from '@/lib/password';
+import dbConnect from '@/backend/db';
+import { User } from '@/backend/models';
+import { hashPassword, comparePassword, validatePassword } from '@/backend/utils/password';
 
 export async function PUT(request: Request) {
     try {
+        await dbConnect();
         const body = await request.json();
         const { userId, currentPassword, newPassword } = body;
 
@@ -21,16 +23,14 @@ export async function PUT(request: Request) {
         }
 
         // Get user with password
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-        });
+        const user = await User.findById(userId).lean();
 
         if (!user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
         // Verify current password
-        const isPasswordValid = await comparePassword(currentPassword, user.password);
+        const isPasswordValid = await comparePassword(currentPassword, (user as any).password);
         if (!isPasswordValid) {
             return NextResponse.json({ error: 'Current password is incorrect' }, { status: 401 });
         }
@@ -39,11 +39,8 @@ export async function PUT(request: Request) {
         const hashedPassword = await hashPassword(newPassword);
 
         // Update password
-        await prisma.user.update({
-            where: { id: userId },
-            data: {
-                password: hashedPassword,
-            },
+        await User.findByIdAndUpdate(userId, {
+            password: hashedPassword,
         });
 
         return NextResponse.json({

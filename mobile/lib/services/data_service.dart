@@ -14,13 +14,26 @@ class DataService {
   late final ApiService _apiService;
 
   DataService._internal() {
+    // For local development:
+    //   - Chrome/Desktop: http://localhost:3000
+    //   - Android Emulator: http://10.0.2.2:3000
+    //   - Physical device: http://<your-pc-ip>:3000
+    // For production: replace with your deployed URL
+    const String baseUrl = "http://localhost:3000";
+
     // Production Vercel URL
     // NOTE: Ensure "Deployment Protection" is DISABLED in Vercel Project Settings > Deployment Protection
     // otherwise the app will get 401 Unauthorized errors.
-    const String baseUrl =
-        "https://school-management-system-anandcodes-projects.vercel.app";
+    // const String baseUrl =
+    //     "https://school-management-system-anandcodes-projects.vercel.app";
+
+
     _apiService = ApiService(baseUrl: baseUrl);
+
   }
+
+
+
 
   // Cache/State
   List<Student> _students = [];

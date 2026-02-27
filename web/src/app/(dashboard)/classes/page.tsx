@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { Plus, MoreVertical, Search, Edit2, Trash2, X, Clock, Users, BookOpen } from "lucide-react";
 import { SchoolClass } from "@/lib/types";
 import { api } from "@/services/api";
-import { Modal } from "@/components/Modal";
+import { Modal } from "@/components/ui/Modal";
 import { AddClassForm } from "@/components/forms/AddClassForm";
 import { toast } from "sonner";
-import { Pagination } from "@/components/Pagination";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function ClassesPage() {
     const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -72,7 +72,7 @@ export default function ClassesPage() {
     const handleEditClass = async (updatedData: Omit<SchoolClass, "id"> | Partial<SchoolClass>) => {
         if (!editingClass) return;
         try {
-            await api.updateClass(editingClass.id, updatedData as Partial<SchoolClass>);
+            await api.updateClass(String(editingClass.id), updatedData as Partial<SchoolClass>);
             toast.success("Class updated successfully!");
             setIsEditOpen(false);
             setEditingClass(null);
@@ -154,12 +154,12 @@ export default function ClassesPage() {
                         <div key={cls.id} className="group relative rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
                             <div className="absolute top-4 right-4">
                                 <button
-                                    onClick={() => setOpenMenuId(openMenuId === cls.id ? null : cls.id)}
+                                    onClick={() => setOpenMenuId(openMenuId === String(cls.id) ? null : String(cls.id))}
                                     className="p-1 rounded-md text-muted-foreground hover:bg-muted transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                                 >
                                     <MoreVertical className="h-4 w-4" />
                                 </button>
-                                {openMenuId === cls.id && (
+                                {openMenuId === String(cls.id) && (
                                     <div className="absolute right-0 top-8 w-32 rounded-md border border-border bg-popover shadow-md z-10 animate-in fade-in zoom-in-95 duration-200">
                                         <button
                                             onClick={() => openEditModal(cls)}
@@ -168,7 +168,7 @@ export default function ClassesPage() {
                                             <Edit2 className="h-3 w-3" /> Edit
                                         </button>
                                         <button
-                                            onClick={() => handleDeleteClass(cls.id)}
+                                            onClick={() => handleDeleteClass(String(cls.id))}
                                             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-left"
                                         >
                                             <Trash2 className="h-3 w-3" /> Delete

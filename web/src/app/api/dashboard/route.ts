@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import dbConnect from '@/backend/db';
+import { Student, Teacher, SchoolClass } from '@/backend/models';
 
 export async function GET() {
     try {
+        await dbConnect();
+
         const [studentsCount, teachersCount, classesCount] = await Promise.all([
-            prisma.student.count(),
-            prisma.teacher.count(),
-            prisma.schoolClass.count(),
+            Student.countDocuments(),
+            Teacher.countDocuments(),
+            SchoolClass.countDocuments(),
         ]);
 
         return NextResponse.json({

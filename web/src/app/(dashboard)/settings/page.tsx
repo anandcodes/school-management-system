@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { User, Bell, Shield, Key, Save, X } from "lucide-react";
-import { Modal } from "@/components/Modal";
+import { Modal } from "@/components/ui/Modal";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
